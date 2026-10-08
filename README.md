@@ -33,7 +33,7 @@ O Wi-Fi do próprio Pi como ponto de acesso **não** funciona bem com essas luze
    ```
    curl -fsSL https://raw.githubusercontent.com/DolbsK/painel-luzes-sensorial/main/instalar.sh | sudo bash
    ```
-3. Responda as perguntas: nome da sala, Wi-Fi da sala, hotspot do celular, IP e zoom da tela.
+3. Responda as perguntas: nome da sala, Wi-Fi da sala, hotspot do celular, IP e tamanho da interface na tela (1,8 para tela 7" Full HD; 1 para tela 7" 1024x600 ou monitor comum).
 4. Ligue o cabo do Pi no roteador da sala, configure o roteador como o script indicar e reinicie.
 
 Atualizar só o código, mantendo luzes, ajustes e rede:

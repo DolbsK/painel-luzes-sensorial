@@ -58,7 +58,10 @@ if [ "$MODO" = reconfigurar ] || { [ "$MODO" = instalar ] && [ ! -f "$PASTA/ajus
   HOT_SSID=$(pergunta "Nome do hotspot do celular" "luzesPI")
   while :; do HOT_SENHA=$(pergunta "Senha do hotspot (mínimo 8 caracteres)" "12345678"); [ ${#HOT_SENHA} -ge 8 ] && break; aviso "Senha curta demais."; done
   IP_CABO=$(pergunta "IP deste computador na rede da sala" "192.168.0.2")
-  ZOOM=$(pergunta "Zoom da tela (1.8 para tela 7\" em 1920x1080; 1 para tela comum)" "1.8")
+  echo "Tamanho da interface: deixa letras e botões maiores ou menores na tela (dá para mudar depois com --reconfigurar)."
+  echo "  1.8  tela 7\" com 1920x1080        1    tela 7\" com 1024x600"
+  echo "  1.4  tela 10\" com 1920x1080       1    monitor ou TV comum"
+  while :; do ZOOM=$(pergunta "Tamanho da interface na tela" "1.8"); ZOOM=${ZOOM/,/.}; [[ $ZOOM =~ ^[0-9]+(\.[0-9]+)?$ ]] && break; aviso "Use um número, por exemplo 1.8"; done
   CODIGO=$(pergunta "Código de usuário da conta Smart Life (pode deixar em branco)" "")
 fi
 
