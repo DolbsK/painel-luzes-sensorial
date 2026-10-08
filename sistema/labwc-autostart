@@ -1,0 +1,2 @@
+/usr/bin/kanshi &
+/usr/bin/lwrespawn __PASTA__/kiosk.sh &

@@ -1,0 +1,14 @@
+# dados de cada instalacao: senhas, chaves das luzes, nomes (nunca vao para o GitHub)
+ajustes.json
+config.json
+devices.json
+devices.bak.json
+magic.json
+magic.json.*
+*.log
+qr.svg
+*.tmp
+# python
+venv/
+__pycache__/
+*.pyc

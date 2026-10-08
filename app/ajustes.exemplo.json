@@ -1,0 +1,15 @@
+{
+  "sala": "Sala Sensorial",
+  "wifi_sala": {
+    "ssid": "MinhaSala-Luzes",
+    "senha": "troque-esta-senha"
+  },
+  "hotspot": {
+    "ssid": "luzesPI",
+    "senha": "12345678"
+  },
+  "rede_sala": "192.168.0.255",
+  "wifi_if": "wlan0",
+  "smartlife_codigo": "",
+  "zoom": 1.8
+}

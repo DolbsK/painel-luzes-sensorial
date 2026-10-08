@@ -1,0 +1,4 @@
+#!/bin/sh
+# Desliga a economia de energia do Wi-Fi (com ela ligada, o painel perde comandos e a internet oscila)
+[ "$1" = __WIFI__ ] && [ "$2" = up ] && /usr/sbin/iw dev __WIFI__ set power_save off
+exit 0

@@ -1,0 +1,845 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Luzes da Sala</title>
+<style>
+@font-face { font-family: "Nunito"; src: url("/static/fonts/Nunito.ttf") format("truetype"); font-weight: 200 1000; }
+:root {
+  --bg: #0f1630; --painel: rgba(255,255,255,.07); --painel2: rgba(255,255,255,.11); --linha: rgba(255,255,255,.08);
+  --texto: #eef1fb; --suave: #a6aecb; --raio: 22px; --cor-atual: hsl(210 60% 58%);
+}
+[hidden] { display: none !important; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+html, body { margin: 0; height: 100%; overflow: hidden; color: var(--texto); font-family: "Nunito", "Cantarell", sans-serif; touch-action: manipulation; }
+body { background:
+  radial-gradient(70% 90% at 85% 10%, color-mix(in srgb, var(--cor-atual) 30%, transparent) 0%, transparent 60%),
+  linear-gradient(135deg, #16224a 0%, #0f1630 55%, #0b1024 100%); transition: background 1.2s ease;
+  display: grid; grid-template-columns: 31% 1fr; gap: 14px; padding: 14px; }
+button { font: inherit; color: inherit; border: 0; cursor: pointer; }
+button:active { transform: scale(.96); }
+svg.i { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* coluna esquerda */
+aside { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+.topo { display: flex; align-items: center; gap: 10px; }
+.topo > div { flex: 1; min-width: 0; }
+.topo h1 { margin: 2px 4px 0; font-size: 24px; font-weight: 900; }
+.topo p { margin: 0 4px; color: var(--suave); font-size: 14px; font-weight: 700; }
+.botao-power { width: 50px; height: 50px; border-radius: 16px; background: var(--painel); box-shadow: inset 0 0 0 1px var(--linha); display: grid; place-items: center; flex: none; }
+.botao-power svg.i { width: 26px; height: 26px; }
+.alvos { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 7px; padding-right: 6px; overscroll-behavior: contain; }
+.alvos::-webkit-scrollbar { width: 6px; } .alvos::-webkit-scrollbar-thumb { background: rgba(255,255,255,.28); border-radius: 6px; }
+.alvo { background: var(--painel); border-radius: 16px; padding: 9px 12px; text-align: left; display: flex; align-items: center; gap: 12px; min-height: 58px; flex: none;
+  box-shadow: inset 0 0 0 1px var(--linha); transition: background .3s, color .3s; }
+.alvo .txt { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.alvo .ponto { width: 34px; height: 34px; border-radius: 50%; flex: none; background: var(--c, #444a63); box-shadow: 0 0 12px var(--c, transparent); display: grid; place-items: center; }
+.alvo .ponto svg { width: 18px; height: 18px; stroke: #fff; }
+.alvo b { font-size: 16px; line-height: 1.2; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.alvo small { font-size: 13px; color: var(--suave); font-weight: 700; }
+.alvo.sel { background: #eef1fb; color: #15193a; }
+.alvo.sel small { color: #59607e; }
+.alvo .off { opacity: .45; }
+.luz .ponto.pi { display: grid; place-items: center; } .luz .ponto.pi svg.i { width: 18px; height: 18px; stroke: #fff; }
+.alvo .alerta { color: #ffb35c; }
+.cartao-brilho { background: var(--painel); border-radius: var(--raio); padding: 12px 14px; box-shadow: inset 0 0 0 1px var(--linha); }
+.cartao-brilho .cab { display: flex; justify-content: space-between; font-weight: 800; font-size: 14px; color: var(--suave); margin-bottom: 8px; }
+.cartao-brilho .cab span:last-child { color: var(--texto); }
+input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 38px; border-radius: 99px; outline: none; margin: 0;
+  background: linear-gradient(90deg, rgba(255,255,255,.08), var(--cor-atual)); }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 46px; height: 46px; border-radius: 50%; background: #fff;
+  border: 5px solid var(--cor-atual); box-shadow: 0 2px 10px rgba(0,0,0,.4); }
+/* Inicio: relogio e clima na esquerda, aparelhos na direita */
+.painel-home { display: none; flex: 1; flex-direction: column; gap: 12px; min-height: 0; }
+body.home .painel-home { display: flex; } body.home .alvos, body.home .cartao-brilho { display: none; }
+.relogio, .clima, .resumo-casa { background: var(--painel); border-radius: var(--raio); box-shadow: inset 0 0 0 1px var(--linha); padding: 16px 18px; }
+.relogio .hora { font-size: 66px; font-weight: 900; line-height: 1; letter-spacing: -1px; }
+.relogio .data { font-size: 17px; color: var(--suave); font-weight: 800; margin-top: 8px; }
+.relogio .data::first-letter { text-transform: uppercase; }
+.clima { display: flex; align-items: center; gap: 14px; }
+.clima svg.i { width: 46px; height: 46px; stroke-width: 1.6; }
+.clima .grau { font-size: 36px; font-weight: 900; line-height: 1; }
+.clima small { display: block; font-size: 14px; color: var(--suave); font-weight: 800; margin-top: 4px; }
+.resumo-casa { display: flex; flex-direction: column; gap: 8px; font-size: 15px; font-weight: 800; color: var(--suave); margin-top: auto; }
+.resumo-casa div { display: flex; align-items: center; gap: 10px; }
+.resumo-casa i { width: 10px; height: 10px; border-radius: 50%; background: #5b6177; flex: none; } .resumo-casa i.ok { background: #3ddc84; box-shadow: 0 0 8px #3ddc84; }
+.casa { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-right: 6px; }
+.casa::-webkit-scrollbar { width: 6px; } .casa::-webkit-scrollbar-thumb { background: rgba(255,255,255,.28); border-radius: 6px; }
+.casa .sec { font-size: 13px; font-weight: 900; color: var(--suave); text-transform: uppercase; letter-spacing: .6px; margin: 4px 4px 8px; }
+.grade-disp { display: grid; grid-template-columns: repeat(3, 1fr); gap: 11px; margin-bottom: 14px; }
+.disp { min-height: 128px; border-radius: 20px; padding: 14px; text-align: left; display: flex; flex-direction: column; gap: 4px; background: var(--painel);
+  box-shadow: inset 0 0 0 1px var(--linha); transition: background .35s, color .35s; }
+.disp .d-topo { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: auto; }
+.disp .d-ic { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.1); }
+.disp .d-ic svg.i { width: 22px; height: 22px; }
+.disp .d-chave { width: 46px; height: 26px; border-radius: 99px; background: rgba(255,255,255,.14); position: relative; flex: none; }
+.disp .d-chave::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #c9cee3; transition: left .25s; }
+.disp b { font-size: 17px; font-weight: 900; line-height: 1.2; margin-top: 10px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.disp small { font-size: 14px; font-weight: 700; color: var(--suave); }
+.disp.on { background: linear-gradient(150deg, #f4f6ff 30%, color-mix(in srgb, var(--c) 45%, #f4f6ff)); color: #15193a; }
+.disp.on small { color: #4d5577; }
+.disp.on .d-ic { background: var(--c); box-shadow: 0 0 16px color-mix(in srgb, var(--c) 70%, transparent); color: #fff; }
+.disp.on .d-chave { background: #15193a; } .disp.on .d-chave::after { left: 23px; background: #fff; }
+.disp.fora { opacity: .5; } .disp.fora small { color: #ffb35c; }
+
+/* direita */
+main { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+nav { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; background: var(--painel); padding: 6px; border-radius: 18px; box-shadow: inset 0 0 0 1px var(--linha); }
+nav button { height: 46px; border-radius: 13px; background: transparent; font-weight: 800; font-size: 16px; color: var(--suave); display: flex; align-items: center; justify-content: center; gap: 7px; }
+nav button svg.i { width: 20px; height: 20px; }
+nav button.on { background: #eef1fb; color: #15193a; }
+.aba { display: none; flex: 1; min-height: 0; }
+.aba.on { display: flex; flex-direction: column; gap: 12px; }
+
+.grade { flex: 1; display: grid; gap: 11px; min-height: 0; }
+.g4 { grid-template-columns: repeat(4, 1fr); grid-auto-rows: 1fr; }
+.cena { border-radius: var(--raio); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; position: relative; overflow: hidden;
+  background: linear-gradient(150deg, var(--g)); background-size: 260% 260%; animation: mexe 26s ease-in-out infinite; box-shadow: inset 0 0 0 1px var(--linha); }
+.cena::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(22,28,60,.10) 0%, rgba(14,18,40,.62) 100%); }
+.cena > * { position: relative; }
+.cena svg.i { width: 46px; height: 46px; stroke-width: 1.7; }
+.cena span { font-size: 18px; font-weight: 800; }
+.cena.ativa { outline: 3px solid #fff; outline-offset: -3px; box-shadow: 0 0 26px color-mix(in srgb, var(--c) 60%, transparent); }
+
+.temp { background: var(--painel); border-radius: var(--raio); padding: 18px 20px; box-shadow: inset 0 0 0 1px var(--linha); }
+.temp .cab { display: flex; justify-content: space-between; font-weight: 800; color: var(--suave); margin-bottom: 12px; font-size: 15px; }
+#temp { height: 54px; background: linear-gradient(90deg, #ff9a3d, #ffc477 30%, #fff1dc 60%, #eef4ff 80%, #cfe0ff); }
+#temp::-webkit-slider-thumb { width: 60px; height: 60px; border-color: #fff; background: transparent; box-shadow: 0 0 0 3px rgba(0,0,0,.25), 0 2px 12px rgba(0,0,0,.4); }
+.presets { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 11px; }
+.preset { border-radius: var(--raio); background: var(--painel); box-shadow: inset 0 0 0 1px var(--linha); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; font-weight: 800; font-size: 17px; }
+.preset i { width: 62px; height: 62px; border-radius: 50%; background: var(--c); box-shadow: 0 0 30px var(--c); }
+
+.cores { flex: 1; display: grid; grid-template-columns: repeat(6, 1fr); grid-auto-rows: 1fr; gap: 9px; }
+.puras { display: grid; grid-template-columns: repeat(6, 1fr); gap: 11px; height: 86px; flex: none; }
+.pura { border-radius: 18px; background: var(--c); box-shadow: 0 0 20px color-mix(in srgb, var(--c) 45%, transparent); display: flex; align-items: flex-end;
+  justify-content: center; padding-bottom: 9px; font-weight: 900; font-size: 15px; color: #fff; text-shadow: 0 1px 5px rgba(0,0,0,.55); }
+.cor { border-radius: 16px; background: var(--c); box-shadow: 0 0 18px color-mix(in srgb, var(--c) 35%, transparent); }
+.chave { display: flex; gap: 6px; background: var(--painel); padding: 5px; border-radius: 14px; align-self: flex-start; box-shadow: inset 0 0 0 1px var(--linha); }
+.chave button { padding: 9px 22px; border-radius: 10px; background: transparent; font-weight: 800; color: var(--suave); font-size: 15px; }
+.chave button.on { background: #eef1fb; color: #15193a; }
+.barra { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.barra .rot { font-weight: 800; color: var(--suave); font-size: 15px; }
+
+.efeito { border-radius: var(--raio); display: flex; flex-direction: column; justify-content: flex-end; padding: 14px; text-align: left; font-weight: 800; font-size: 17px;
+  background: linear-gradient(120deg, var(--g)); background-size: 300% 300%; animation: mexe 9s ease-in-out infinite; position: relative; overflow: hidden;
+  box-shadow: inset 0 0 0 1px var(--linha); text-shadow: 0 1px 6px rgba(0,0,0,.45); }
+.efeito::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 40%, rgba(10,14,32,.55)); }
+.efeito span { position: relative; }
+.efeito.ativa { box-shadow: inset 0 0 0 3px #fff; }
+@keyframes mexe { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+
+.lista { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-content: start; scrollbar-width: none; }
+.luz { background: var(--painel); border-radius: 18px; padding: 12px; box-shadow: inset 0 0 0 1px var(--linha); display: flex; flex-direction: column; gap: 10px; }
+.luz .cab { display: flex; align-items: center; gap: 10px; }
+.luz .ponto { width: 34px; height: 34px; border-radius: 50%; background: var(--c, #444a63); box-shadow: 0 0 14px var(--c, transparent); flex: none; }
+.luz b { font-size: 16px; line-height: 1.15; }
+.luz small { display: block; color: var(--suave); font-weight: 700; font-size: 12.5px; }
+.luz .acoes { display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 7px; }
+.luz .acoes button { height: 44px; border-radius: 12px; background: var(--painel2); font-weight: 800; font-size: 13.5px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.luz .acoes button svg.i { width: 18px; height: 18px; }
+.luz .acoes .ligado { background: #eef1fb; color: #15193a; }
+.luz .acoes .localizando { background: #ffd56a; color: #2b2000; animation: pulsa 1.4s ease-in-out infinite; }
+@keyframes pulsa { 50% { opacity: .6; } }
+
+.barra-luzes { display: flex; align-items: center; gap: 10px; }
+.chip-net { flex: 1; display: flex; align-items: center; gap: 9px; font-weight: 800; font-size: 14px; color: var(--suave); }
+.chip-net i { width: 12px; height: 12px; border-radius: 50%; background: #6b7290; flex: none; }
+.chip-net.ok { color: #9ff0b8; } .chip-net.ok i { background: #3ddc84; box-shadow: 0 0 10px #3ddc84; }
+.btn2 { height: 46px; padding: 0 18px; border-radius: 14px; background: var(--painel2); font-weight: 800; font-size: 15px; box-shadow: inset 0 0 0 1px var(--linha); }
+.btn2.destaque { background: #eef1fb; color: #15193a; }
+.btn2.perigo { background: #e5484d; color: #fff; }
+.barra-luzes .btn2 svg.i { width: 19px; height: 19px; margin-right: 6px; vertical-align: -4px; }
+.hora-visor { text-align: center; margin: 4px 0 14px; }
+.hora-visor b { display: block; font-size: 58px; font-weight: 900; line-height: 1.05; }
+.hora-visor span { display: block; font-size: 19px; font-weight: 800; color: var(--suave); }
+.hora-visor span::first-letter { text-transform: uppercase; }
+.passos-hora { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.passos-hora > div { display: flex; align-items: center; gap: 10px; }
+.passos-hora label { width: 96px; font-size: 19px; font-weight: 900; color: var(--suave); }
+.passos-hora .btn2 { height: 54px; min-width: 76px; font-size: 21px; }
+.btn2:disabled, .fechar-x:disabled { opacity: .35; }
+.luz .cab .remover { margin-left: auto; width: 36px; height: 36px; border-radius: 10px; background: transparent; color: var(--suave); display: grid; place-items: center; flex: none; }
+.luz .cab .remover svg.i { width: 19px; height: 19px; }
+.assist { position: relative; width: 97%; height: 96%; background: #18203f; border-radius: 26px; box-shadow: 0 20px 60px rgba(0,0,0,.5); display: flex; overflow: hidden; }
+.assist.wifi { width: 70%; height: 86%; } .assist.confirma { width: 56%; height: auto; }
+.passos { width: 28%; background: rgba(255,255,255,.04); padding: 22px 14px; display: flex; flex-direction: column; gap: 8px; }
+.passos div { display: flex; align-items: center; gap: 10px; padding: 12px 10px; border-radius: 12px; font-weight: 800; font-size: 20px; color: var(--suave); }
+.passos div b { width: 28px; height: 28px; border-radius: 50%; background: #2a335c; display: grid; place-items: center; flex: none; font-size: 16px; color: var(--texto); }
+.passos div.on { background: #eef1fb; color: #15193a; } .passos div.on b { background: #15193a; color: #fff; }
+.passos div.feito b { background: #3ddc84; color: #0b2a17; }
+.conteudo { flex: 1; display: flex; flex-direction: column; padding: 22px 24px; min-width: 0; min-height: 0; }
+.conteudo h2 { margin: 0 0 10px; font-size: 32px; font-weight: 900; padding-right: 44px; }
+.suave { color: var(--suave); margin: 0 0 10px; font-weight: 700; font-size: 15px; line-height: 1.4; }
+.corpo { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
+.corpo ol { margin: 6px 0 0; padding-left: 32px; font-size: 24px; line-height: 1.5; font-weight: 700; }
+.corpo li { margin-bottom: 10px; }
+.corpo li small { color: var(--suave); font-size: 19px; }
+.corpo .destaque-txt { font-size: 24px; font-weight: 700; line-height: 1.45; margin: 4px 0 10px; }
+.corpo .suave { font-size: 21px; }
+.corpo .chave { margin: 0 0 6px; } .corpo .chave button { font-size: 20px; padding: 10px 28px; }
+.spin { width: 34px; height: 34px; border-radius: 50%; border: 4px solid rgba(255,255,255,.18); border-top-color: #eef1fb; animation: gira .9s linear infinite; flex: none; display: inline-block; }
+.spin.pequeno { width: 20px; height: 20px; border-width: 3px; }
+@keyframes gira { to { transform: rotate(360deg); } }
+.carregando { display: flex; align-items: center; gap: 20px; font-size: 24px; line-height: 1.5; background: rgba(255,255,255,.06); border-radius: 18px; padding: 26px; margin-top: 14px; }
+.carregando .spin { width: 54px; height: 54px; border-width: 5px; }
+.sucesso { display: flex; gap: 18px; align-items: flex-start; background: rgba(61,220,132,.12); border-radius: 18px; padding: 18px 20px; font-size: 24px; margin: 8px 0 12px; }
+.sucesso .check { width: 52px; height: 52px; border-radius: 50%; background: #3ddc84; color: #0b2a17; display: grid; place-items: center; font-size: 30px; font-weight: 900; flex: none; }
+.sucesso ul { margin: 6px 0 0; padding-left: 26px; font-size: 22px; }
+.btn2.grande { height: 60px; font-size: 21px; padding: 0 26px; }
+.qr-vazio { width: 230px; height: 230px; border-radius: 14px; background: rgba(255,255,255,.06); display: grid; place-items: center; flex: none; }
+.status-net.erro { background: rgba(229,72,77,.15); color: #ffb3b5; font-size: 21px; }
+.nota.conta { font-size: 18px; line-height: 1.6; }
+.link { background: transparent; color: #ffe2a8; text-decoration: underline; font-weight: 900; font-size: 18px; padding: 0; }
+.corpo .tag { display: inline-block; background: #2a335c; padding: 1px 12px; border-radius: 8px; font-weight: 900; font-size: 24px; }
+.corpo .nota { margin-top: 12px; background: rgba(255,200,90,.1); color: #ffd99a; border-radius: 12px; padding: 12px 16px; font-size: 20px; font-weight: 700; }
+.status-net { display: flex; align-items: center; gap: 12px; font-size: 22px; font-weight: 900; margin: 4px 0 8px; padding: 9px 16px; border-radius: 14px; background: rgba(255,255,255,.06); }
+.status-net i { width: 16px; height: 16px; border-radius: 50%; background: #e5484d; flex: none; }
+.status-net.ok i { background: #3ddc84; box-shadow: 0 0 12px #3ddc84; }
+.qrbox { display: flex; gap: 18px; align-items: flex-start; }
+.qrbox img { width: 230px; height: 230px; background: #fff; border-radius: 14px; padding: 6px; flex: none; }
+.rodape { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 12px; }
+.rodape .btn2, .corpo .btn2 { height: 58px; font-size: 20px; padding: 0 26px; }
+.rodape span { color: var(--suave); font-weight: 800; font-size: 17px; text-align: center; flex: 1; }
+.fechar-x { position: absolute; top: 12px; right: 14px; width: 40px; height: 40px; border-radius: 12px; background: #2a335c; font-size: 18px; font-weight: 900; }
+.redes { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; display: flex; flex-direction: column; gap: 7px; padding-right: 4px; }
+.redes .sec { font-size: 13px; font-weight: 900; color: var(--suave); text-transform: uppercase; letter-spacing: .6px; margin: 6px 2px 0; }
+.redes .salva { display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 16px; border-radius: 13px; background: rgba(255,255,255,.07); font-weight: 800; font-size: 16px; flex: none; }
+.redes .salva span { flex: 1; } .redes .salva small { color: var(--suave); font-size: 13px; }
+.redes .salva .btn2 { height: 40px; font-size: 14px; }
+.redes > button { flex: none; }
+.redes::-webkit-scrollbar, .corpo::-webkit-scrollbar { width: 8px; } .redes::-webkit-scrollbar-thumb, .corpo::-webkit-scrollbar-thumb { background: rgba(255,255,255,.25); border-radius: 8px; }
+.redes button { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-radius: 13px; background: rgba(255,255,255,.07); font-weight: 800; font-size: 16px; text-align: left; }
+.redes button small { color: var(--suave); font-size: 13px; }
+.tec-titulo { font-weight: 900; font-size: 16px; color: var(--suave); margin: 0 0 8px 4px; }
+
+.tipos { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 8px; }
+.tipo { text-align: left; background: rgba(255,255,255,.07); border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 8px; box-shadow: inset 0 0 0 2px transparent; }
+.tipo b { font-size: 27px; } .tipo span { font-size: 20px; font-weight: 700; line-height: 1.4; color: #d7dbef; } .tipo small { font-size: 17px; font-weight: 800; color: #9ff0b8; }
+.tipo.on { box-shadow: inset 0 0 0 3px #eef1fb; background: rgba(255,255,255,.12); }
+.aps { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.salva.ap { display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 16px; border-radius: 13px; background: rgba(255,255,255,.07); font-weight: 800; font-size: 22px; }
+.salva.ap span { flex: 1; } .salva.ap small { color: var(--suave); font-size: 17px; }
+.linha-botoes { display: flex; gap: 10px; flex-wrap: wrap; }
+/* teclado de renomear */
+.folha { position: fixed; inset: 0; background: rgba(5,8,20,.78); display: none; align-items: center; justify-content: center; z-index: 9; }
+.folha.on { display: flex; }
+.teclado { width: 96%; background: #1a2142; border-radius: 24px; padding: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+.teclado .campo { display: flex; gap: 10px; margin-bottom: 12px; }
+.teclado .campo div { flex: 1; height: 54px; border-radius: 14px; background: #0f1630; display: flex; align-items: center; padding: 0 16px; font-size: 22px; font-weight: 800; }
+.teclado .campo div::after { content: ""; width: 2px; height: 28px; background: var(--texto); margin-left: 2px; animation: pisca 1s steps(1) infinite; }
+@keyframes pisca { 50% { opacity: 0; } }
+.teclado .campo button { padding: 0 20px; border-radius: 14px; font-weight: 900; font-size: 17px; background: #2a335c; }
+.teclado .campo .salvar { background: #eef1fb; color: #15193a; }
+.teclas { display: flex; flex-direction: column; gap: 7px; }
+.teclas div { display: flex; gap: 7px; justify-content: center; }
+.teclas button { flex: 1; max-width: 76px; height: 48px; border-radius: 11px; background: #2a335c; font-size: 20px; font-weight: 800; }
+.teclas .larga { max-width: 340px; flex: 5; }
+.teclas .media { max-width: 130px; flex: 2; font-size: 16px; }
+.teclas.simb button { font-size: 18px; }
+</style>
+</head>
+<body class="home">
+<aside>
+  <div class="topo"><div><h1 id="nomeSala">Sala Sensorial</h1><p id="resumo">conectando...</p></div>
+    <button class="botao-power" id="desligar" aria-label="Desligar tudo"><svg class="i" viewBox="0 0 24 24"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/></svg></button></div>
+  <div class="painel-home">
+    <div class="relogio"><div class="hora" id="hora">--:--</div><div class="data" id="data"></div></div>
+    <div class="clima" id="clima" hidden></div>
+    <div class="resumo-casa" id="resumoCasa"></div>
+  </div>
+  <div class="alvos" id="alvos"></div>
+  <div class="cartao-brilho">
+    <div class="cab"><span>Brilho</span><span id="brilhoTxt">40%</span></div>
+    <input type="range" id="brilho" min="3" max="100" value="40">
+  </div>
+</aside>
+
+<main>
+  <nav id="abas"></nav>
+
+  <section class="aba on" id="aba-inicio"><div class="casa" id="casa"></div></section>
+
+  <section class="aba" id="aba-cenas"><div class="grade g4" id="cenas"></div></section>
+
+  <section class="aba" id="aba-branco">
+    <div class="temp">
+      <div class="cab"><span>Amarelo</span><span>Branco frio</span></div>
+      <input type="range" id="temp" min="0" max="100" value="30">
+    </div>
+    <div class="presets" id="presets"></div>
+  </section>
+
+  <section class="aba" id="aba-cores">
+    <div class="puras" id="puras"></div>
+    <div class="barra"><span class="rot">Intensidade da cor</span>
+      <div class="chave" id="satChave"><button data-s="0.45">Suave</button><button data-s="0.75" class="on">Média</button><button data-s="1">Viva</button></div></div>
+    <div class="cores" id="cores"></div>
+  </section>
+
+  <section class="aba" id="aba-efeitos">
+    <div class="barra"><span class="rot">Velocidade</span>
+      <div class="chave" id="velChave"><button data-v="1" class="on">Lenta</button><button data-v="2">Média</button><button data-v="3">Rápida</button></div></div>
+    <div class="grade g4" id="efeitos"></div>
+  </section>
+
+  <section class="aba" id="aba-luzes">
+    <div class="barra-luzes">
+      <span class="chip-net" id="chipNet"><i></i><span>verificando...</span></span>
+      <button class="btn2" id="btnWifi">Conectar Wi-Fi</button>
+      <button class="btn2 destaque" id="btnAdd">+ Adicionar luz ou interruptor</button>
+    </div>
+    <div class="barra-luzes">
+      <button class="btn2" id="btnCidade"></button>
+      <button class="btn2" id="btnHora"></button>
+    </div>
+    <div class="lista" id="lista"></div>
+  </section>
+</main>
+
+<div class="folha" id="folhaAssist">
+  <div class="assist">
+    <div class="passos" id="passos"></div>
+    <div class="conteudo">
+      <div id="passoCorpo" class="corpo"></div>
+      <div class="rodape"><button class="btn2" id="assVoltar">Voltar</button><span id="assInfo"></span><button class="btn2 destaque" id="assProx">Próximo</button></div>
+    </div>
+    <button class="fechar-x" id="assFechar">✕</button>
+  </div>
+</div>
+
+<div class="folha" id="folhaWifi">
+  <div class="assist wifi">
+    <div class="conteudo">
+      <h2>Internet do painel</h2>
+      <p class="suave" id="wifiAtual"></p>
+      <div class="redes" id="redes"></div>
+      <div class="rodape"><button class="btn2" id="wifiAtualizar">Procurar redes</button><span id="wifiMsg"></span><button class="btn2" id="wifiFechar">Fechar</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="folha" id="folhaConfirma">
+  <div class="assist confirma"><div class="conteudo"><h2 id="confTitulo"></h2><p class="suave" id="confTexto"></p>
+    <div class="rodape"><button class="btn2" id="confNao">Cancelar</button><span></span><button class="btn2 perigo" id="confSim">Remover</button></div></div></div>
+</div>
+
+<div class="folha" id="folhaCidade">
+  <div class="assist wifi">
+    <div class="conteudo">
+      <h2>Cidade do clima</h2>
+      <p class="suave" id="cidadeAtual"></p>
+      <button class="btn2 destaque grande" id="cidadeDigitar">Digitar o nome da cidade</button>
+      <div class="status-net erro" id="cidadeSemNet" hidden><i></i>Sem internet. Para trocar a cidade, ligue a internet ("Conectar Wi-Fi" ou roteador do celular).</div>
+      <div class="redes" id="cidades" style="margin-top: 12px"></div>
+      <div class="rodape"><span id="cidadeMsg"></span><button class="btn2" id="cidadeFechar">Fechar</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="folha" id="folhaHora">
+  <div class="assist wifi">
+    <div class="conteudo">
+      <h2>Acertar hora</h2>
+      <p class="suave">Com internet, a hora se acerta sozinha. Use isto só se a hora estiver errada e a sala estiver sem internet.</p>
+      <div class="hora-visor"><b id="horaHora"></b><span id="horaData"></span></div>
+      <div class="passos-hora">
+        <div><label>Dia</label><button class="btn2" data-passo="d:-1">−</button><button class="btn2" data-passo="d:1">+</button></div>
+        <div><label>Hora</label><button class="btn2" data-passo="h:-1">−</button><button class="btn2" data-passo="h:1">+</button></div>
+        <div><label>Minuto</label><button class="btn2" data-passo="m:-10">−10</button><button class="btn2" data-passo="m:-1">−1</button><button class="btn2" data-passo="m:1">+1</button><button class="btn2" data-passo="m:10">+10</button></div>
+      </div>
+      <div class="rodape"><button class="btn2" id="horaCancelar">Cancelar</button><span id="horaMsg"></span><button class="btn2 destaque" id="horaSalvar">Salvar hora</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="folha" id="folhaTeclado">
+  <div class="teclado">
+    <div class="tec-titulo" id="tecTitulo"></div>
+    <div class="campo"><div id="campoNome"></div><button id="cancelar">Cancelar</button><button class="salvar" id="salvar">Salvar</button></div>
+    <div class="teclas" id="teclas"></div>
+  </div>
+</div>
+
+<script>
+const P = s => `<svg class="i" viewBox="0 0 24 24">${s}</svg>`;
+const IC = {
+  calma: P('<path d="M2 8c2-2 4-2 6 0s4 2 6 0 4-2 6 0 2 1 2 1"/><path d="M2 13c2-2 4-2 6 0s4 2 6 0 4-2 6 0 2 1 2 1"/><path d="M2 18c2-2 4-2 6 0s4 2 6 0 4-2 6 0 2 1 2 1"/>'),
+  relaxar: P('<path d="M17.5 19H8a5 5 0 1 1 .9-9.9A6 6 0 0 1 20 12.5 3.5 3.5 0 0 1 17.5 19z"/>'),
+  natureza: P('<path d="M11 20A7 7 0 0 1 4 13c0-6 6-9 16-9 0 10-3 16-9 16z"/><path d="M4 21c3-4 6-7 10-10"/>'),
+  aconchego: P('<path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z"/>'),
+  foco: P('<path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/>'),
+  noite: P('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>'),
+  brincar: P('<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>'),
+  desligar: P('<path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/>'),
+  luz: P('<path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/>'),
+  todas: P('<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>'),
+  branco: P('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
+  cores: P('<circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/><path d="M12 2a10 10 0 0 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.4A5.6 5.6 0 0 0 22 9.8C22 5.5 17.5 2 12 2z"/>'),
+  efeitos: P('<path d="M2 12c2.5-5 5-5 7.5 0s5 5 7.5 0 3.5-3.3 5-2"/><path d="M2 17c2.5-5 5-5 7.5 0"/>'),
+  localizar: P('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3"/>'),
+  inter: P('<rect x="6" y="2" width="12" height="20" rx="3"/><rect x="9" y="6" width="6" height="7" rx="1.5"/>'),
+  lixo: P('<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/>'),
+  ajustes: P('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),
+  relogio: P('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+  casa: P('<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>'),
+  sol: P('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
+  nuvem: P('<path d="M17.5 19H8a5 5 0 1 1 .9-9.9A6 6 0 0 1 20 12.5 3.5 3.5 0 0 1 17.5 19z"/>'),
+  chuva: P('<path d="M17.5 15H8a5 5 0 1 1 .9-9.9A6 6 0 0 1 20 8.5 3.5 3.5 0 0 1 17.5 15z"/><path d="M8 18l-1 3M12 18l-1 3M16 18l-1 3"/>'),
+  raio: P('<path d="M17.5 14H8a5 5 0 1 1 .9-9.9A6 6 0 0 1 20 7.5 3.5 3.5 0 0 1 17.5 14z"/><path d="M12 14l-2 4h4l-2 4"/>'),
+  lua: P('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>'),
+  editar: P('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'),
+};
+// [id, nome, cor de destaque, paleta do cartao (a mesma que a cena passeia nas luzes)]
+const CENAS = [["calma","Calma","hsl(210 70% 58%)","#3f7fd0,#2f5fae,#4fa0d0,#3f7fd0"],["relaxar","Relaxar","hsl(268 55% 62%)","#7a5cc8,#9a6cc8,#5e4fb0,#7a5cc8"],
+  ["natureza","Natureza","hsl(130 45% 50%)","#3f9a5a,#2f8a7a,#7aa84a,#3f9a5a"],["aconchego","Aconchego","hsl(30 85% 58%)","#d9893a,#b8622a,#e0a050,#d9893a"],
+  ["foco","Foco","hsl(190 45% 72%)","#8fb4c8,#a8c4d4,#7a9cb4,#8fb4c8"],["noite","Noite","hsl(232 60% 45%)","#26338a,#2a1f6a,#1a2a7a,#26338a"],
+  ["brincar","Brincar","hsl(320 65% 62%)","#d0508a,#e0b040,#40c0c0,#e07a40,#9a6ad0,#d0508a"],["desligar","Desligar","#5b6177","#3a3f52,#2c3042,#3a3f52"]];
+const PRESETS = [["Vela", 0, "#ff9a3d"], ["Quente", 0.3, "#ffc98a"], ["Neutro", 0.6, "#fff3e2"], ["Dia", 1, "#dbe8ff"]];
+const CORES = [0, 15, 30, 45, 60, 90, 120, 150, 170, 190, 210, 230, 250, 270, 290, 310, 330, 345];
+const EFEITOS = [["arcoiris","Arco-íris","#f25c5c,#f2a84c,#f2dc4c,#58d68d,#4cc3e0,#5d7de2,#a569bd,#f25c5c"],
+  ["mar","Fundo do mar","#0f6fa8,#0b2f7a,#1aa3b8,#16205e,#2a8fd0"],["aurora","Aurora","#2fd88a,#137a6a,#9a5ce0,#11506e,#3fcf6a"],
+  ["lava","Lava","#ff4a1c,#b3125e,#ff8a1a,#8a1a6e"],["fogueira","Fogueira","#ff9a2e,#9e3a08,#ffb347,#6e2a06,#ff8c1a"],
+  ["algodao","Algodão-doce","#f7a8d0,#c9a8f0,#a8d4f5,#e8b0f0"],["estrelas","Noite estrelada","#121a52,#3a2f8f,#0b1240,#6a4fc0,#141c5c"],
+  ["respirar","Respirar","#3a3f8f,#8e95e8,#3a3f8f,#8e95e8"]];
+const ABAS = [["inicio","Início","casa"],["cenas","Cenas","brincar"],["branco","Branco","branco"],["cores","Cores","cores"],["efeitos","Efeitos","efeitos"],["luzes","Ajustes","ajustes"]];
+
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+// todo texto que vem de fora (nome de luz, Wi-Fi de vizinho, mensagem de erro) passa por aqui antes de ir para o HTML
+const esc = t => String(t ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+let AJ = { sala: "Sala Sensorial", wifi_sala: { ssid: "", senha: "" }, hotspot: { ssid: "", senha: "" } };
+fetch("/api/ajustes").then(r => r.json()).then(a => { AJ = a; $("#nomeSala").textContent = a.sala; document.title = a.sala; }).catch(() => {});
+let todos = [], inters = [], luzes = [], sel = [], sat = 0.75, vel = 1;
+const post = (url, corpo = {}) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ alvos: sel.length ? sel : null, ...corpo }) }).catch(() => {});
+const corModo = id => { const c = CENAS.find(x => "cena_" + x[0] === id); if (c) return c[2]; const e = EFEITOS.find(x => x[0] === id); return e ? e[2].split(",")[0] : "hsl(300 60% 65%)"; };
+const corCss = l => !l.ligada || !l.online ? null : l.tipo === "interruptor" ? "#ffd36b" : l.modo === "white" ? "#fff1dc" : l.modo === "scene" ? corModo(l.efeito) : `hsl(${l.h} ${Math.round(l.s * 75) + 10}% ${60 + (1 - l.s) * 25}%)`;
+const setCor = c => document.documentElement.style.setProperty("--cor-atual", c);
+
+// abas
+$("#abas").innerHTML = ABAS.map(([id, n, ic]) => `<button data-aba="${id}" class="${id === "inicio" ? "on" : ""}">${IC[ic]}${n}</button>`).join("");
+$$("#abas button").forEach(b => b.onclick = () => {
+  $$("#abas button").forEach(x => x.classList.toggle("on", x === b));
+  $$(".aba").forEach(a => a.classList.toggle("on", a.id === "aba-" + b.dataset.aba));
+  document.body.classList.toggle("home", b.dataset.aba === "inicio");
+});
+
+// cenas
+$("#cenas").innerHTML = CENAS.map(([id, n, c, g]) => `<button class="cena" data-id="${id}" style="--c:${c};--g:${g}">${IC[id]}<span>${n}</span></button>`).join("");
+$$(".cena").forEach(b => b.onclick = () => {
+  const id = b.dataset.id;
+  marcar(".cena", b);
+  if (id === "desligar") { post("/api/ligar", { on: false }); setCor("#3a3f52"); }
+  else { post("/api/cena", { nome: id }); setCor(b.style.getPropertyValue("--c")); }
+});
+
+// branco
+$("#presets").innerHTML = PRESETS.map(([n, t, c]) => `<button class="preset" data-t="${t}" style="--c:${c}"><i></i>${n}</button>`).join("");
+$$(".preset").forEach(b => b.onclick = () => { $("#temp").value = b.dataset.t * 100; branco(+b.dataset.t); });
+let tTemp;
+$("#temp").addEventListener("input", e => { clearTimeout(tTemp); tTemp = setTimeout(() => branco(e.target.value / 100), 150); });
+function branco(t) { marcar(".cena", null); setCor(`color-mix(in srgb, #ff9a3d ${Math.round((1 - t) * 100)}%, #e6efff)`); post("/api/branco", { t }); }
+
+// cores
+function desenharCores() {
+  $("#cores").innerHTML = CORES.map(h => `<button class="cor" data-h="${h}" style="--c:hsl(${h} ${Math.round(sat * 75) + 15}% ${66 - sat * 8}%)"></button>`).join("");
+  $$(".cor").forEach(b => b.onclick = () => { marcar(".cena", null); setCor(b.style.getPropertyValue("--c")); post("/api/cor", { h: +b.dataset.h, s: sat }); });
+}
+desenharCores();
+const PURAS = [["Vermelho", 0, "#ff1a1a"], ["Verde", 120, "#16e016"], ["Azul", 240, "#2a3cff"], ["Amarelo", 60, "#ffe600"], ["Ciano", 180, "#00e5f0"], ["Magenta", 300, "#ff1ae0"]];
+$("#puras").innerHTML = PURAS.map(([n, h, c]) => `<button class="pura" data-h="${h}" style="--c:${c}">${n}</button>`).join("");
+$$(".pura").forEach(b => b.onclick = () => { marcar(".cena", null); setCor(b.style.getPropertyValue("--c")); post("/api/cor", { h: +b.dataset.h, s: 1 }); });
+$$("#satChave button").forEach(b => b.onclick = () => { marcar("#satChave button", b); sat = +b.dataset.s; desenharCores(); });
+
+// efeitos
+$("#efeitos").innerHTML = EFEITOS.map(([id, n, g]) => `<button class="efeito" data-id="${id}" style="--g:${g}"><span>${n}</span></button>`).join("");
+$$(".efeito").forEach(b => b.onclick = () => { marcar(".efeito", b); marcar(".cena", null); post("/api/efeito", { nome: b.dataset.id, vel }); });
+$$("#velChave button").forEach(b => b.onclick = () => {
+  marcar("#velChave button", b); vel = +b.dataset.v;
+  const at = document.querySelector(".efeito.ativa"); if (at) post("/api/efeito", { nome: at.dataset.id, vel });
+});
+
+// inicio
+const NOMES_MODO = Object.fromEntries([...EFEITOS.map(([id, n]) => [id, "Efeito " + n]), ...CENAS.map(([id, n]) => ["cena_" + id, "Cena " + n])]);
+function desenharCasa() {
+  const cartao = (l, inter) => {
+    const on = l.online && l.ligada, c = inter ? "#ffd36b" : (corCss(l) || "#5b6177");
+    const st = !l.online ? "sem resposta" : !l.ligada ? (inter ? "Desligado" : "Desligada")
+      : inter ? "Ligado" : (l.modo === "scene" ? (NOMES_MODO[l.efeito] || "Efeito") : l.modo === "white" ? "Branco" : "Cor") + " · " + Math.round(l.v * 100) + "%";
+    return `<button class="disp ${on ? "on" : ""} ${l.online ? "" : "fora"}" data-disp="${l.id}" style="--c:${c}">
+      <div class="d-topo"><span class="d-ic">${inter ? IC.inter : IC.luz}</span><span class="d-chave"></span></div><b>${esc(l.nome)}</b><small>${st}</small></button>`;
+  };
+  $("#casa").innerHTML = (luzes.length ? `<div class="sec">Luzes</div><div class="grade-disp">${luzes.map(l => cartao(l, false)).join("")}</div>` : "")
+    + (inters.length ? `<div class="sec">Interruptores</div><div class="grade-disp">${inters.map(i => cartao(i, true)).join("")}</div>` : "")
+    || '<p class="suave">Nenhum aparelho cadastrado. Use a aba Ajustes para adicionar.</p>';
+  $$("[data-disp]").forEach(b => b.onclick = () => {
+    const l = todos.find(x => x.id === b.dataset.disp);
+    l.ligada = !l.ligada; api("/api/ligar", { alvos: [l.id], on: l.ligada }); desenharAlvos(); desenharLista();
+  });
+  const on = todos.filter(l => l.online && l.ligada).length, fora = todos.filter(l => !l.online).length;
+  $("#resumoCasa").innerHTML = `<div><i class="${on ? "ok" : ""}"></i>${on} de ${todos.length} aparelho${todos.length === 1 ? "" : "s"} ligado${on === 1 ? "" : "s"}</div>`
+    + (fora ? `<div><i></i>${fora} sem resposta</div>` : "");
+}
+function relogio() {
+  const d = new Date();
+  $("#hora").textContent = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  $("#data").textContent = d.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
+}
+relogio(); setInterval(relogio, 5000);
+const CLIMA = c => c === 0 ? ["sol", "Céu limpo"] : c <= 2 ? ["sol", "Poucas nuvens"] : c === 3 ? ["nuvem", "Nublado"] : c <= 48 ? ["nuvem", "Neblina"]
+  : c <= 67 || (c >= 80 && c <= 82) ? ["chuva", "Chuva"] : c <= 77 || c <= 86 ? ["nuvem", "Frio"] : ["raio", "Tempestade"];
+async function lerClima() {
+  try {
+    const c = await (await fetch("/api/clima")).json();
+    if (c.temp === undefined) { $("#clima").hidden = true; return; }
+    let [ic, txt] = CLIMA(c.codigo);
+    if (ic === "sol" && !c.dia) ic = "lua";
+    $("#clima").innerHTML = `${IC[ic]}<div><div class="grau">${c.temp}°</div><small>${txt} · ${esc(c.cidade)}</small></div>`;
+    $("#clima").hidden = false;
+  } catch (e) {}
+}
+lerClima(); setInterval(lerClima, 10 * 60 * 1000);
+
+function marcar(grupo, alvo) { $$(grupo).forEach(x => x.classList.toggle(grupo.includes("button") ? "on" : "ativa", x === alvo)); }
+
+// brilho e desligar
+let tBrilho;
+$("#brilho").addEventListener("input", e => {
+  $("#brilhoTxt").textContent = e.target.value + "%";
+  clearTimeout(tBrilho); tBrilho = setTimeout(() => post("/api/brilho", { v: e.target.value / 100 }), 120);
+});
+$("#desligar").onclick = () => { post("/api/ligar", { on: false }); setCor("#3a3f52"); };
+
+// alvos (coluna esquerda) e lista de luzes
+function desenharAlvos() {
+  const todas = !sel.length;
+  const ligadas = luzes.filter(l => l.ligada && l.online).length;
+  $("#resumo").textContent = !luzes.length ? "nenhuma luz cadastrada" : `${ligadas} de ${luzes.length} ${luzes.length > 1 ? "luzes ligadas" : "luz ligada"}`
+    + (inters.length ? ` · ${inters.filter(i => i.ligada && i.online).length}/${inters.length} interruptor${inters.length > 1 ? "es" : ""}` : "");
+  $("#alvos").innerHTML = (luzes.length > 1 ? `<button class="alvo ${todas ? "sel" : ""}" data-id=""><span class="ponto" style="--c:var(--cor-atual)">${IC.todas}</span><span class="txt"><b>Todas</b><small>${luzes.length} luzes</small></span></button>` : "") +
+    luzes.map(l => {
+      const c = corCss(l);
+      const st = !l.online ? '<span class="alerta">sem resposta</span>' : !l.ligada ? "desligada" : l.modo === "scene" ? (NOMES_MODO[l.efeito] || "Efeito") : l.modo === "white" ? "branco · " + Math.round(l.v * 100) + "%" : Math.round(l.v * 100) + "%";
+      return `<button class="alvo ${sel.includes(l.id) || (todas && luzes.length === 1) ? "sel" : ""}" data-id="${l.id}"><span class="ponto ${l.ligada ? "" : "off"}" style="${c ? "--c:" + c : ""}">${IC.luz}</span><span class="txt"><b>${esc(l.nome)}</b><small>${st}</small></span></button>`;
+    }).join("");
+  desenharCasa();
+  $$(".alvo").forEach(b => b.onclick = () => {
+    const id = b.dataset.id;
+    if (!id) sel = [];
+    else if (sel.includes(id)) sel = sel.filter(x => x !== id);
+    else sel = [...sel, id];
+    if (sel.length === luzes.length) sel = [];
+    desenharAlvos();
+  });
+  const foco = luzes.filter(l => !sel.length || sel.includes(l.id));
+  if (foco.length && document.activeElement !== $("#brilho")) {
+    const v = Math.round(Math.max(...foco.map(l => l.v)) * 100);
+    $("#brilho").value = v; $("#brilhoTxt").textContent = v + "%";
+  }
+}
+
+let tecladoAberto = false;
+const api = (url, corpo) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo || {}) }).then(r => r.json()).catch(() => ({}));
+
+function desenharLista() {
+  if (tecladoAberto) return;
+  $("#lista").innerHTML = [...luzes, ...inters].map(l => {
+    const c = corCss(l), inter = l.tipo === "interruptor";
+    return `<div class="luz"><div class="cab"><span class="ponto pi" style="${c ? "--c:" + c : ""}">${inter ? IC.inter : IC.luz}</span><div><b>${esc(l.nome)}</b>
+      <small>${inter ? "Interruptor · " : ""}${l.online ? (l.ligada ? (inter ? "ligado" : "ligada") : (inter ? "desligado" : "desligada")) : "sem resposta"}${l.cap.branco_real ? " · branco real" : ""}</small></div>
+      <button class="remover" data-acao="remover" data-id="${l.id}">${IC.lixo}</button></div>
+      <div class="acoes"><button class="${l.ligada ? "ligado" : ""}" data-acao="ligar" data-id="${l.id}">${IC.desligar}${l.ligada ? (inter ? "Ligado" : "Ligada") : (inter ? "Desligado" : "Desligada")}</button>
+      <button class="${l.localizando ? "localizando" : ""}" data-acao="identificar" data-id="${l.id}">${IC.localizar}${l.localizando ? "Parar" : "Localizar"}</button>
+      <button data-acao="renomear" data-id="${l.id}">${IC.editar}Nome</button></div></div>`;
+  }).join("") || '<p class="suave">Nenhum aparelho cadastrado ainda. Toque em "+ Adicionar luz ou interruptor".</p>';
+  $$(".luz button[data-acao]").forEach(b => b.onclick = () => {
+    const l = todos.find(x => x.id === b.dataset.id);
+    const acao = b.dataset.acao;
+    if (acao === "ligar") { l.ligada = !l.ligada; api("/api/ligar", { alvos: [l.id], on: l.ligada }); desenharLista(); desenharAlvos(); }
+    if (acao === "identificar") { l.localizando = !l.localizando; api("/api/identificar", { id: l.id, on: l.localizando }); desenharLista(); }
+    if (acao === "renomear") abrirTeclado({ titulo: "Nome da luz", valor: l.nome, max: 24, aoSalvar: async v => {
+      l.nome = v; await api("/api/renomear", { id: l.id, nome: v }); desenharAlvos(); } });
+    if (acao === "remover") confirmar(`Remover "${l.nome}"?`,
+      "Use quando a lâmpada queimou ou saiu da sala. Se ela for pareada de novo no Smart Life, volta a aparecer ao adicionar luzes.",
+      async () => { await api("/api/remover", { id: l.id }); atualizar(); });
+  });
+}
+
+// confirmacao
+let aoConfirmar = null;
+function confirmar(titulo, texto, fn, rotulo = "Remover") { $("#confTitulo").textContent = titulo; $("#confTexto").textContent = texto; $("#confSim").textContent = rotulo; aoConfirmar = fn; $("#folhaConfirma").classList.add("on"); }
+$("#confNao").onclick = () => $("#folhaConfirma").classList.remove("on");
+$("#confSim").onclick = () => { $("#folhaConfirma").classList.remove("on"); if (aoConfirmar) aoConfirmar(); };
+
+// teclado na tela (nomes e senhas)
+const LINHAS = ["1234567890", "qwertyuiop", "asdfghjklç", "zxcvbnm", "áéíóúãõâêô"];
+const SIMBOLOS = ["1234567890", "@#$%&*-_+=", "!?.,:;/()", "'<>[]{}|~", "^`´°ºª§"];
+let tec = {};
+function desenharTeclas() {
+  const linhas = tec.simb ? SIMBOLOS : LINHAS;
+  $("#teclas").className = "teclas" + (tec.simb ? " simb" : "");
+  $("#teclas").innerHTML = linhas.map((ln, i) => `<div>${i === 3 ? '<button class="media" data-k="shift">⇧</button>' : ""}${[...ln].map(k => `<button data-k="${k.replace(/"/g, "&quot;")}">${tec.maius ? k.toUpperCase() : k}</button>`).join("")}${i === 3 ? '<button class="media" data-k="apagar">⌫</button>' : ""}</div>`).join("") +
+    `<div><button class="media" data-k="simb">${tec.simb ? "abc" : "?123"}</button><button class="larga" data-k=" ">espaço</button></div>`;
+  $$("#teclas button").forEach(b => b.onclick = () => {
+    const k = b.dataset.k;
+    if (k === "shift") { tec.maius = !tec.maius; desenharTeclas(); return; }
+    if (k === "simb") { tec.simb = !tec.simb; desenharTeclas(); return; }
+    if (k === "apagar") tec.texto = tec.texto.slice(0, -1);
+    else if (tec.texto.length < tec.max) { tec.texto += tec.maius ? k.toUpperCase() : k; if (tec.maius && !tec.senha) { tec.maius = false; desenharTeclas(); } }
+    if (k === " " && !tec.senha) { tec.maius = true; desenharTeclas(); }
+    $("#campoNome").textContent = tec.texto;
+  });
+}
+function abrirTeclado(o) {
+  tec = { texto: o.valor || "", max: o.max || 63, senha: !!o.senha, maius: false, simb: false, aoSalvar: o.aoSalvar };
+  tecladoAberto = true; $("#tecTitulo").textContent = o.titulo || ""; desenharTeclas();
+  $("#campoNome").textContent = tec.texto; $("#folhaTeclado").classList.add("on");
+}
+function fecharTeclado() { tecladoAberto = false; $("#folhaTeclado").classList.remove("on"); desenharLista(); }
+$("#cancelar").onclick = fecharTeclado;
+$("#salvar").onclick = async () => { const v = tec.senha ? tec.texto : tec.texto.trim(); const fn = tec.aoSalvar; fecharTeclado(); if (fn && (v || tec.senha)) await fn(v); };
+
+// internet do painel
+let rede = { internet: false, wifi: null, cadastro: {} }, netAntes = null;
+async function lerRede() {
+  try { rede = await (await fetch("/api/rede")).json(); } catch (e) { return; }
+  const c = $("#chipNet"); c.classList.toggle("ok", rede.internet);
+  $("#cidadeDigitar").disabled = !rede.internet; $("#cidadeSemNet").hidden = rede.internet;
+  if (rede.internet !== netAntes) { netAntes = rede.internet; if (rede.internet) lerClima(); else $("#clima").hidden = true; }
+  c.querySelector("span").textContent = rede.internet ? `Internet ligada${rede.wifi ? " · " + rede.wifi : ""}` : "Sem internet (normal no dia a dia)";
+  if ($("#folhaAssist").classList.contains("on")) desenharPasso();
+  if ($("#folhaWifi").classList.contains("on")) $("#wifiAtual").textContent = rede.wifi ? `Conectado em: ${rede.wifi}${rede.internet ? " (com internet)" : " (sem internet)"}` : "Não conectado a nenhuma rede.";
+}
+async function listarRedes() {
+  $("#redes").innerHTML = '<p class="suave">Procurando redes...</p>'; $("#wifiMsg").textContent = "";
+  let r = { redes: [] }, sv = { redes: [] };
+  try { [r, sv] = await Promise.all([fetch("/api/wifi/lista").then(x => x.json()), fetch("/api/wifi/salvas").then(x => x.json())]); } catch (e) {}
+  const salvas = sv.redes.length ? '<div class="sec">Redes salvas</div>' + sv.redes.map(n => `<div class="salva"><span>${esc(n.ssid)}${n.ssid === rede.wifi || n.perfil === rede.wifi ? " ✓" : ""}</span>${n.fixa ? "<small>padrão do painel</small>" : `<button class="btn2" data-esquecer="${esc(n.perfil)}">Esquecer</button>`}</div>`).join("") : "";
+  $("#redes").innerHTML = salvas + '<div class="sec">Redes disponíveis</div>' + r.redes.map(n => `<button data-ssid="${esc(n.ssid)}" data-senha="${n.senha}"><span>${esc(n.ssid)}${n.ssid === rede.wifi ? " ✓" : ""}</span><small>sinal ${n.sinal}%${n.senha ? " · com senha" : ""}</small></button>`).join("") || '<p class="suave">Nenhuma rede encontrada.</p>';
+  $$("#redes [data-esquecer]").forEach(b => b.onclick = () => confirmar(`Esquecer a rede "${b.dataset.esquecer}"?`,
+    "O painel deixa de entrar nela sozinho. Para usar de novo, é só conectar e digitar a senha.",
+    async () => { const x = await api("/api/wifi/esquecer", { ssid: b.dataset.esquecer }); $("#wifiMsg").textContent = x.msg || ""; lerRede(); listarRedes(); }, "Esquecer"));
+  $$("#redes button[data-ssid]").forEach(b => b.onclick = () => {
+    const ssid = b.dataset.ssid;
+    const conectar = async senha => { $("#wifiMsg").textContent = "Conectando..."; const r = await api("/api/wifi/conectar", { ssid, senha }); $("#wifiMsg").textContent = r.msg || "Erro"; lerRede(); listarRedes(); };
+    if (b.dataset.senha === "true") abrirTeclado({ titulo: `Senha da rede ${ssid}`, senha: true, aoSalvar: conectar }); else conectar("");
+  });
+}
+// cidade do clima (Ajustes)
+let cidadesAchadas = [];
+async function lerLocal() {
+  let l = {};
+  try { l = await (await fetch("/api/local")).json(); } catch (e) {}
+  $("#btnCidade").innerHTML = `${IC.sol}Cidade do clima: ${esc(l.cidade) || "escolher"}`;
+  $("#cidadeAtual").textContent = l.cidade ? `Cidade atual: ${l.cidade}${l.estado ? " · " + l.estado : ""}${l.pelo_ip ? " (achada pela internet, pode estar errada)" : ""}` : "Nenhuma cidade escolhida.";
+}
+lerLocal();
+$("#btnCidade").onclick = () => { $("#cidades").innerHTML = ""; $("#cidadeMsg").textContent = ""; lerLocal(); $("#folhaCidade").classList.add("on"); };
+$("#cidadeFechar").onclick = () => $("#folhaCidade").classList.remove("on");
+$("#cidadeDigitar").onclick = () => abrirTeclado({ titulo: "Nome da cidade", max: 40, aoSalvar: async nome => {
+  $("#cidadeMsg").textContent = "Buscando..."; $("#cidades").innerHTML = "";
+  let r = {};
+  try { r = await (await fetch("/api/local/buscar?nome=" + encodeURIComponent(nome))).json(); } catch (e) { r = { erro: "Painel sem resposta." }; }
+  if (r.erro) { $("#cidadeMsg").textContent = r.erro; return; }
+  cidadesAchadas = r.cidades;
+  $("#cidades").innerHTML = cidadesAchadas.map((c, i) => `<button data-cidade="${i}"><span>${esc(c.cidade)}</span><small>${esc(c.estado)}${c.pais !== "BR" ? " · " + esc(c.pais) : ""}</small></button>`).join("");
+  $("#cidadeMsg").textContent = "Toque na cidade certa.";
+  $$("[data-cidade]").forEach(b => b.onclick = async () => {
+    const c = cidadesAchadas[+b.dataset.cidade];
+    await api("/api/local", c);
+    $("#cidadeMsg").textContent = `Salvo: ${c.cidade}`; $("#cidades").innerHTML = "";
+    lerLocal(); setTimeout(lerClima, 5000);
+  });
+} });
+
+// acertar hora (Ajustes)
+let horaNova;
+$("#btnHora").innerHTML = `${IC.relogio}Acertar hora`;
+function desenharHora() {
+  $("#horaHora").textContent = horaNova.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  $("#horaData").textContent = horaNova.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+}
+$("#btnHora").onclick = () => { horaNova = new Date(); horaNova.setSeconds(0, 0); desenharHora(); $("#horaMsg").textContent = ""; $("#folhaHora").classList.add("on"); };
+$("#horaCancelar").onclick = () => $("#folhaHora").classList.remove("on");
+$$("[data-passo]").forEach(b => b.onclick = () => {
+  const [u, n] = b.dataset.passo.split(":");
+  if (u === "d") horaNova.setDate(horaNova.getDate() + +n);
+  if (u === "h") horaNova.setHours(horaNova.getHours() + +n);
+  if (u === "m") horaNova.setMinutes(horaNova.getMinutes() + +n);
+  desenharHora();
+});
+$("#horaSalvar").onclick = async () => {
+  const d = n => String(n).padStart(2, "0"), h = horaNova;
+  const r = await api("/api/hora", { quando: `${h.getFullYear()}-${d(h.getMonth() + 1)}-${d(h.getDate())} ${d(h.getHours())}:${d(h.getMinutes())}` });
+  $("#horaMsg").textContent = r.msg || "Painel sem resposta.";
+  if (r.ok) { relogio(); setTimeout(() => $("#folhaHora").classList.remove("on"), 1200); }
+};
+
+$("#btnWifi").onclick = () => { $("#folhaWifi").classList.add("on"); lerRede(); listarRedes(); };
+$("#wifiAtualizar").onclick = listarRedes;
+$("#wifiFechar").onclick = () => $("#folhaWifi").classList.remove("on");
+
+// assistente "Adicionar luz ou interruptor" (manual passo a passo)
+const PASSOS_TUYA = ["Tipo de aparelho", "Internet", "Preparar o aparelho", "Parear no app", "Trazer ao painel"];
+const PASSOS_MAGIC = ["Tipo de aparelho", "Ligar o controlador", "Configurar"];
+let passo = 0, celular = "android", tipo = null;
+const passos = () => tipo === "magic" ? PASSOS_MAGIC : PASSOS_TUYA;
+const spinner = '<span class="spin"></span>';
+function corpoPasso() {
+  const ok = rede.internet;
+  if (passo === 0) return `<h2>Qual é o aparelho?</h2>
+    <p class="destaque-txt">Olhe a etiqueta ou a caixa do aparelho novo:</p>
+    <div class="tipos">
+      <button class="tipo ${tipo === "tuya" ? "on" : ""}" data-tipo="tuya"><b>Smart Life / Tuya</b><span>Lâmpadas, spots, interruptores e fitas que usam o app Smart Life ou Tuya.</span><small>Precisa de internet só no cadastro</small></button>
+      <button class="tipo ${tipo === "magic" ? "on" : ""}" data-tipo="magic"><b>Magic Home</b><span>Controlador de fita com QR e o logo "Magic Home" na etiqueta (cria uma rede "LEDnet...").</span><small>Não precisa de internet nem de app</small></button>
+    </div>`;
+  if (tipo === "magic") return corpoMagic();
+  if (passo === 1) return `<h2>Internet (só para cadastrar)</h2>
+    <p class="destaque-txt">A internet é usada <b>só no cadastro</b>. Depois a sala funciona sem ela.</p>
+    <div class="status-net ${ok ? "ok" : ""}"><i></i>${ok ? "Internet conectada. Pode tocar em Próximo." : "Sem internet no momento"}</div>
+    ${ok ? "" : `<p class="suave">Se a sala não tem internet, use o roteador do celular:</p>
+    <div class="chave abas-cel"><button data-cel="android" class="${celular === "android" ? "on" : ""}">Android</button><button data-cel="iphone" class="${celular === "iphone" ? "on" : ""}">iPhone</button></div>
+    ${celular === "android" ? `<ol>
+      <li>Abra <b>Configurações → Conexões → Roteador Wi-Fi e Ancoragem → Roteador Wi-Fi</b> <small>(em alguns modelos: Rede e Internet → Ponto de acesso)</small>.</li>
+      <li>Nome da rede: <span class="tag">${esc(AJ.hotspot.ssid)}</span> · Senha: <span class="tag">${esc(AJ.hotspot.senha)}</span> · Banda: <span class="tag">2,4 GHz</span></li>
+      <li>Ligue o roteador, com os <b>dados móveis ligados</b>, e espere ficar verde aqui.</li></ol>`
+    : `<ol>
+      <li>Em <b>Ajustes → Geral → Sobre → Nome</b>, mude o nome do iPhone para <span class="tag">${esc(AJ.hotspot.ssid)}</span>.</li>
+      <li>Em <b>Ajustes → Acesso Pessoal</b>: senha do Wi-Fi <span class="tag">${esc(AJ.hotspot.senha)}</span> e ligue <b>Maximizar Compatibilidade</b>.</li>
+      <li>Ligue <b>Permitir Outros Acessarem</b>, com os dados móveis ligados, e espere ficar verde aqui.</li></ol>`}`}
+    <div class="nota">Já tem internet na sala? Use o botão "Conectar Wi-Fi" na aba Ajustes e pule esta etapa.</div>`;
+  if (passo === 2) return `<h2>Colocar em modo de pareamento</h2>
+    <ol><li>Instale o aparelho e ligue a energia.</li>
+    <li><b>Lâmpada:</b> desligue e ligue o interruptor da parede 3 vezes seguidas, até ela <b>piscar rápido</b>.</li>
+    <li><b>Fita de LED:</b> segure o botão do controlador da fita por uns 5 segundos, até <b>piscar rápido</b>.</li>
+    <li><b>Interruptor:</b> segure o botão do interruptor por uns 5 a 10 segundos, até a luzinha dele <b>piscar rápido</b>.</li></ol>
+    <div class="nota">Trocando um aparelho queimado? Depois de cadastrar o novo, remova o antigo na aba Ajustes (ícone de lixeira).</div>`;
+  if (passo === 3) return `<h2>Parear no app Smart Life</h2>
+    <ol><li>Abra o app <b>Smart Life</b>.</li>
+    <li>Toque em <b>+</b> (canto de cima) → <b>Adicionar dispositivo</b>. O aparelho piscando costuma aparecer sozinho: toque em <b>Adicionar</b>.</li>
+    <li>Quando pedir o Wi-Fi, use: <span class="tag">${esc(AJ.wifi_sala.ssid)}</span> · senha <span class="tag">${esc(AJ.wifi_sala.senha)}</span></li>
+    <li>Espere o app mostrar que o aparelho foi <b>adicionado</b>.</li></ol>
+    <div class="nota">Se der erro: confira se a internet continua ligada e se o aparelho ainda pisca rápido. Repita o passo 2.</div>`;
+  const c = rede.cadastro || {};
+  const conta = rede.user_code || "";
+  if (c.etapa === "importando") return `<h2>Trazer ao painel</h2>
+    <div class="carregando">${spinner}<div><b>Login confirmado!</b><br>Procurando os aparelhos na rede da sala... isso leva uns 20 segundos.</div></div>`;
+  if (c.etapa === "pronto" && (c.novas || []).length) return `<h2>Pronto!</h2>
+    <div class="sucesso"><div class="check">✓</div><div><b>${esc(c.msg)}</b><ul>${(c.nomes || []).map(n => `<li>${esc(n)}</li>`).join("")}</ul></div></div>
+    <p class="destaque-txt">Na aba Ajustes, use <b>"Localizar"</b> e <b>"Nome"</b> para achar a luz e dar um nome. Já pode desligar o roteador do celular.</p>
+    <button class="btn2 destaque grande" id="btnVerLuzes">Ir para a aba Ajustes</button>`;
+  const aguardando = c.etapa === "qr";
+  const qr = aguardando && c.qr ? `<img src="/api/adicionar/qr.svg?t=${c.qr}">` : aguardando ? `<div class="qr-vazio">${spinner}</div>` : "";
+  const erro = c.etapa === "erro" || (c.etapa === "pronto" && !(c.novas || []).length);
+  return `<h2>Trazer ao painel</h2>
+    <div class="qrbox">${qr}<div>
+    ${aguardando ? `<ol><li>No Smart Life, toque em <b>+</b> → <b>Escanear</b>.</li><li>Aponte para este código.</li><li>Toque em <b>Confirmar login</b>.</li></ol>
+      <div class="status-net"><span class="spin pequeno"></span>${esc(c.msg || "Gerando o código...")}</div>`
+    : `<p class="destaque-txt">Toque no botão abaixo para mostrar o código e leia com o mesmo celular do app.</p>
+      ${erro ? `<div class="status-net erro"><i></i>${esc(c.msg)}</div>` : ""}
+      <button class="btn2 destaque grande" id="btnQr">${erro ? "Tentar de novo" : "Mostrar código QR"}</button>`}
+    </div></div>
+    <div class="nota conta">Conta do Smart Life usada pelo código: <b>${esc(conta) || "nenhuma"}</b>. Usou outra conta no app? <button class="link" id="btnConta">Usar outra conta</button></div>`;
+}
+function corpoMagic() {
+  if (passo === 1) return `<h2>Ligar o controlador</h2>
+    <ol><li>Ligue a fita com o controlador Magic Home na energia, perto do painel.</li>
+    <li>Se o controlador já foi usado antes: desligue e ligue a energia dele <b>5 vezes seguidas</b> (2 segundos em cada).</li></ol>
+    <div class="nota">Não precisa de internet nem do app. O painel configura tudo sozinho no próximo passo.</div>`;
+  const m = rede.magic || {};
+  if (m.etapa === "configurando" || m.etapa === "buscando") return `<h2>Configurar</h2>
+    <div class="carregando">${spinner}<div><b>${esc(m.msg)}</b><br>Isso leva de 1 a 3 minutos. Durante esse tempo o painel pode ficar sem internet, é normal.</div></div>`;
+  if (m.etapa === "pronto" && (m.nomes || []).length) return `<h2>Pronto!</h2>
+    <div class="sucesso"><div class="check">✓</div><div><b>${esc(m.msg)}</b><ul>${m.nomes.map(n => `<li>${esc(n)}</li>`).join("")}</ul></div></div>
+    <p class="destaque-txt">Na aba Ajustes, use <b>"Localizar"</b> e <b>"Nome"</b> para achar a luz e dar um nome.</p>
+    <button class="btn2 destaque grande" id="btnVerLuzes">Ir para a aba Ajustes</button>`;
+  const lista = aps === null ? `<div class="status-net"><span class="spin pequeno"></span>Procurando controladores...</div>`
+    : aps.length ? aps.map(a => `<div class="salva ap"><span>${esc(a.ssid)} <small>sinal ${a.sinal}%</small></span><button class="btn2 destaque" data-ap="${esc(a.ssid)}">Configurar</button></div>`).join("")
+    : `<div class="status-net erro"><i></i>Nenhum controlador novo encontrado. Confira o passo 1.</div>`;
+  return `<h2>Configurar</h2>
+    ${m.etapa === "erro" || (m.etapa === "pronto" && !(m.nomes || []).length) ? `<div class="status-net erro"><i></i>${esc(m.msg)}</div>` : ""}
+    <p class="destaque-txt">Controladores novos perto do painel:</p>
+    <div class="aps">${lista}</div>
+    <div class="linha-botoes"><button class="btn2" id="btnAps">Procurar de novo</button><button class="btn2" id="btnMagicSala">Procurar fitas já na sala</button></div>`;
+}
+let aps = null;
+function procurarAps() { aps = null; desenharPasso(); fetch("/api/magic/aps").then(r => r.json()).then(r => { aps = r.aps; desenharPasso(); }).catch(() => { aps = []; desenharPasso(); }); }
+let ultimoCorpo = "";
+function desenharPasso() {
+  const PASSOS = passos();
+  $("#passos").innerHTML = PASSOS.map((n, i) => `<div class="${i === passo ? "on" : i < passo ? "feito" : ""}"><b>${i < passo ? "✓" : i + 1}</b>${n}</div>`).join("");
+  const corpo = corpoPasso();
+  if (corpo !== ultimoCorpo) { $("#passoCorpo").innerHTML = corpo; ultimoCorpo = corpo; ligarBotoesPasso(); }
+  const m = rede.magic || {}, c = rede.cadastro || {};
+  const ocupado = (tipo === "magic" && ["configurando", "buscando"].includes(m.etapa)) || (tipo === "tuya" && c.etapa === "importando");
+  $("#assVoltar").disabled = passo === 0 || ocupado;
+  $("#assFechar").disabled = ocupado;
+  $("#assProx").textContent = passo === PASSOS.length - 1 ? "Concluir" : "Próximo";
+  const travaNet = tipo === "tuya" && passo === 1 && !rede.internet;
+  $("#assProx").disabled = (passo === 0 && !tipo) || travaNet || ocupado;
+  $("#assInfo").textContent = ocupado ? "Aguarde terminar" : passo === 0 && !tipo ? "Escolha o tipo de aparelho" : travaNet ? "Ligue a internet para continuar" : "";
+}
+function ligarBotoesPasso() {
+  $$(".abas-cel button").forEach(b => b.onclick = () => { celular = b.dataset.cel; desenharPasso(); });
+  $$("[data-tipo]").forEach(b => b.onclick = () => { tipo = b.dataset.tipo; desenharPasso(); });
+  $$("[data-ap]").forEach(b => b.onclick = () => { rede.magic = { etapa: "configurando", msg: "Entrando na rede do controlador..." }; desenharPasso(); api("/api/magic/configurar", { ssid: b.dataset.ap }).then(() => setTimeout(lerRede, 1500)); });
+  const pa = $("#btnAps"); if (pa) pa.onclick = procurarAps;
+  const ms = $("#btnMagicSala"); if (ms) ms.onclick = () => { rede.magic = { etapa: "buscando", msg: "Procurando fitas Magic Home na rede da sala..." }; desenharPasso(); api("/api/magic/buscar").then(() => setTimeout(lerRede, 1500)); };
+  const q = $("#btnQr");
+  if (q) q.onclick = () => { q.disabled = true; rede.cadastro = { etapa: "qr", msg: "Gerando o código..." }; desenharPasso(); api("/api/adicionar/iniciar").then(() => setTimeout(lerRede, 1500)); };
+  const v = $("#btnVerLuzes");
+  if (v) v.onclick = () => { fecharAssist(); document.querySelector('nav button[data-aba="luzes"]').click(); };
+  const c = $("#btnConta");
+  if (c) c.onclick = () => abrirTeclado({ titulo: "Código de usuário da outra conta (Smart Life → Eu → engrenagem → Conta e segurança → Código de usuário)", valor: "", max: 20,
+    aoSalvar: async v => { rede.cadastro = { etapa: "qr", msg: "Gerando o código..." }; desenharPasso(); await api("/api/adicionar/iniciar", { nome: v }); setTimeout(lerRede, 1500); } });
+}
+function fecharAssist() { $("#folhaAssist").classList.remove("on"); atualizar(); }
+$("#btnAdd").onclick = () => { passo = 0; tipo = null; aps = null; ultimoCorpo = ""; $("#folhaAssist").classList.add("on"); lerRede().then(desenharPasso); };
+$("#assVoltar").onclick = () => { if (passo > 0) { passo--; desenharPasso(); } };
+$("#assProx").onclick = () => {
+  if (passo < passos().length - 1) { passo++; desenharPasso(); if (tipo === "magic" && passo === 2) procurarAps(); }
+  else fecharAssist();
+};
+$("#assFechar").onclick = fecharAssist;
+lerRede(); setInterval(() => lerRede(), 2000);
+
+
+async function atualizar() {
+  try {
+    const r = await (await fetch("/api/estado")).json();
+    todos = r.luzes; luzes = todos.filter(l => l.tipo !== "interruptor"); inters = todos.filter(l => l.tipo === "interruptor");
+    sel = sel.filter(id => luzes.some(l => l.id === id));
+    desenharAlvos(); desenharLista();
+    const ref = luzes.find(l => l.ligada && (!sel.length || sel.includes(l.id)));
+    if (ref) setCor(corCss(ref)); else setCor("#3a3f52");
+    if (r.cena) marcar(".cena", document.querySelector(`.cena[data-id="${r.cena}"]`));
+  } catch (e) { $("#resumo").textContent = "painel sem conexão"; }
+}
+atualizar();
+setInterval(atualizar, 4000);
+document.addEventListener("contextmenu", e => e.preventDefault());
+
+// no Pi o toque chega como mouse (labwc mouseEmulation), entao arrastar para rolar e feito aqui
+(() => {
+  let alvo = null, y0 = 0, s0 = 0, arrastou = false;
+  document.addEventListener("pointerdown", e => {
+    arrastou = false;
+    alvo = e.target.closest("input") ? null : e.target.closest(".redes, .corpo, .lista, .alvos, .casa");
+    if (alvo && alvo.scrollHeight <= alvo.clientHeight) alvo = null;
+    y0 = e.clientY; s0 = alvo ? alvo.scrollTop : 0;
+  });
+  document.addEventListener("pointermove", e => {
+    if (!alvo || !(e.buttons & 1)) return;
+    const dy = e.clientY - y0;
+    if (!arrastou && Math.abs(dy) < 12) return;
+    arrastou = true;
+    alvo.scrollTop = s0 - dy;
+  });
+  document.addEventListener("pointerup", () => { alvo = null; });
+  document.addEventListener("click", e => { if (arrastou) { e.stopPropagation(); e.preventDefault(); arrastou = false; } }, true);
+  document.addEventListener("dragstart", e => e.preventDefault());
+})();
+</script>
+</body>
+</html>
