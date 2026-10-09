@@ -5,6 +5,7 @@ Painel touch para controlar as luzes de uma sala sensorial (por exemplo, para cr
 - **Início:** cartões de cada aparelho (liga/desliga com um toque), hora, data e clima (quando há internet).
 - **Cenas vivas:** Calma, Relaxar, Natureza, Aconchego, Foco, Noite e Brincar. As cores passeiam bem devagar entre tons vizinhos, sem trocas bruscas.
 - **Branco, Cores e Efeitos:** efeitos suaves e **sincronizados entre todas as luzes**, porque o próprio painel conduz o efeito.
+- **Som:** cenas e efeitos podem tocar música ou sons de ambiente, e a luz pode reagir ao som (estalos da fogueira, ondas do mar). Ver a seção "Som" abaixo.
 - **Ajustes:** cadastro de luzes com assistente passo a passo, conexão Wi-Fi, "Localizar" (a luz pisca para ser identificada), renomear, remover, cidade do clima e acerto de hora.
 
 ## Luzes compatíveis
@@ -42,6 +43,13 @@ curl -fsSL https://raw.githubusercontent.com/DolbsK/painel-luzes-sensorial/main/
 ```
 Refazer as perguntas (nome da sala, Wi-Fi...): o mesmo comando com `--reconfigurar` no lugar de `--atualizar`.
 
+## Som
+O som toca no navegador da tela (Web Audio), não no servidor. Cada cena ou efeito aponta para um som em `app/static/sons/sons.json`; trocar ou acrescentar som é só mexer nesse arquivo e nos áudios, sem mexer no código.
+- **Os áudios não vão para este repositório** (a licença de muitos bancos de som proíbe distribuir o arquivo sozinho). Ponha os `.ogg` em `app/static/sons/` do seu painel. Sem eles o painel funciona normal, só sem som. `app/static/sons/CREDITOS.md` registra de onde veio cada faixa na instalação original.
+- `sons.json`: `sons` (cada som é `playlist` de várias faixas ou `loop` de uma gravação, com `ganho` opcional), `cenas` e `efeitos` (qual som toca em cada um, com `ganho` e `reacao` opcionais por cena), `antecipa` (segundos que o aviso da luz sai antes do estalo, para a luz acender junto com o som). Um som `loop` pode ter `eventos` (sons curtos sorteados por cima do fundo, como bichos da mata).
+- **A luz acompanhar o som:** o som pode ter `marcas`, um `.marcas.json` gerado uma vez pelo script `ferramentas/marcas.py` (precisa de ffmpeg e numpy): `python ferramentas/marcas.py pulsos fogueira.ogg --k 10` marca os estalos, `python ferramentas/marcas.py nivel mar.ogg` marca o sobe e desce das ondas. A tela avisa o servidor (`POST /api/reacao`) e o servidor só aplica na luz. Limite sensorial: no máximo 2 pulsos por segundo, a luz nunca apaga. Em Ajustes, um interruptor desliga só a reação, outro desliga o som.
+- Fade de entrada de 4 s e de saída de 3 s, volume inicial de 35%. Os áudios devem ter o mesmo volume percebido (`loudnorm`, cerca de -27 LUFS).
+
 ## Estrutura
 ```
 app/        servidor (FastAPI) e tela (static/index.html)
@@ -50,6 +58,8 @@ app/        servidor (FastAPI) e tela (static/index.html)
   rede.py     Wi-Fi do Pi e cadastro Tuya pelo QR
   efeitos.py  cenas, efeitos e cores
   ajustes.py  lê o ajustes.json de cada instalação
+  static/sons/  sons.json, marcas e (só no painel) os áudios
+ferramentas/ marcas.py: marca estalos e ondas dos áudios
 sistema/    modelos de serviço, tela cheia (labwc + Chromium), permissões e rede
 instalar.sh instalador
 ```

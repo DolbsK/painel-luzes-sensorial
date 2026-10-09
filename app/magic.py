@@ -4,7 +4,7 @@ from pathlib import Path
 from flux_led import WifiLedBulb
 from flux_led.scanner import BulbScanner
 from ajustes import AJ
-from efeitos import BRILHO_MAX, EFEITOS, LOCALIZAR_S, ONDA, QUADRO_S, branco_rgb, quadro_efeito
+from efeitos import BRILHO_MAX, EFEITOS, LOCALIZAR_S, ONDA, QUADRO_S, branco_rgb, esperar_quadro, quadro_efeito, reacao, reagir
 
 BASE = Path(__file__).parent
 ARQ = BASE / "magic.json"
@@ -169,13 +169,15 @@ class LuzMagic:
                 self._faz(lambda b: b.turnOn())
             tentou = 0
             while g == self.geracao:
-                if self.online or time.time() - tentou > 5:  # fora do ar: tenta de novo a cada 5 s
-                    tentou = time.time()
-                    h, s, v = quadro_efeito(e, vel, self.alvo_h, self.alvo_s, self.alvo_v, time.time())
+                n0, agora = reacao["n"], time.time()
+                if self.online or agora - tentou > 5:  # fora do ar: tenta de novo a cada 5 s
+                    tentou = agora
+                    h, s, v = quadro_efeito(e, vel, self.alvo_h, self.alvo_s, self.alvo_v, agora)
+                    h, s, v = reagir(nome, h, s, v, agora)  # luz acompanhando o som (so se a tela avisou)
                     with self.lock:
                         if g == self.geracao:
                             self._faz(lambda b: b.setRgb(*self._rgb(h, s, v), persist=False, retry=1))
-                time.sleep(QUADRO_S)
+                esperar_quadro(n0, time.time())
         threading.Thread(target=run, daemon=True).start()
 
     def brilho(self, v):

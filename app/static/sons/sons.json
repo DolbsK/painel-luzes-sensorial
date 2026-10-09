@@ -1,0 +1,18 @@
+{
+  "antecipa": 0.15,
+  "sons": {
+    "tranquila": {"nome": "Tranquila", "tipo": "playlist", "faixas": ["tranquila-1.ogg", "tranquila-2.ogg", "tranquila-3.ogg", "tranquila-4.ogg", "tranquila-5.ogg"]},
+    "caixinha":  {"nome": "Caixinha",  "tipo": "playlist", "faixas": ["caixinha-1.ogg", "caixinha-2.ogg", "caixinha-3.ogg"]},
+    "fogueira":  {"nome": "Fogueira",  "tipo": "loop", "faixas": ["fogueira.ogg"], "marcas": "fogueira.marcas.json"},
+    "natureza":  {"nome": "Natureza",  "tipo": "loop", "faixas": ["natureza.ogg"],
+                  "eventos": {"intervalo": [40, 120], "itens": [
+                    {"faixa": "bicho-macaco-1.ogg", "peso": 3}, {"faixa": "bicho-macaco-2.ogg", "peso": 3},
+                    {"faixa": "bicho-tucano-1.ogg", "peso": 3}, {"faixa": "bicho-ave-1.ogg", "peso": 3},
+                    {"faixa": "bicho-sapos-1.ogg", "peso": 2}]}},
+    "mar":       {"nome": "Mar",       "tipo": "loop", "faixas": ["mar.ogg"], "marcas": "mar.marcas.json"}
+  },
+  "cenas":   {"calma": "tranquila", "relaxar": "tranquila", "natureza": "natureza",
+              "aconchego": {"som": "fogueira", "ganho": 0.5, "reacao": 0.5},
+              "noite": "caixinha"},
+  "efeitos": {"fogueira": "fogueira", "mar": "mar", "estrelas": "caixinha"}
+}

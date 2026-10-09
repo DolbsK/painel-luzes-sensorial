@@ -94,9 +94,12 @@ nav button.on { background: #eef1fb; color: #15193a; }
 
 .grade { flex: 1; display: grid; gap: 11px; min-height: 0; }
 .g4 { grid-template-columns: repeat(4, 1fr); grid-auto-rows: 1fr; }
-.cena { border-radius: var(--raio); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; position: relative; overflow: hidden;
-  background: linear-gradient(150deg, var(--g)); background-size: 260% 260%; animation: mexe 26s ease-in-out infinite; box-shadow: inset 0 0 0 1px var(--linha); }
-.cena::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(22,28,60,.10) 0%, rgba(14,18,40,.62) 100%); }
+/* O degrade dos cartoes anda por transform numa camada propria (so o compositor da GPU trabalha). Animar background-position
+   repintava os 8 cartoes a cada quadro e ocupava 160% de um nucleo do Pi, o que travava os avisos de luz do som.
+   Em passos (steps) o degrade anda a 5 ou 10 quadros por segundo: o movimento e lento demais para se notar o passo, e a CPU cai mais. */
+.cena { border-radius: var(--raio); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; position: relative; overflow: hidden; isolation: isolate; }
+.cena::after { content: ""; position: absolute; z-index: -1; top: 0; bottom: 0; left: 0; width: 260%; background: linear-gradient(110deg, var(--g)); animation: desliza-cena 26s steps(65) infinite; will-change: transform; }
+.cena::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(22,28,60,.10) 0%, rgba(14,18,40,.62) 100%); box-shadow: inset 0 0 0 1px var(--linha); border-radius: inherit; }
 .cena > * { position: relative; }
 .cena svg.i { width: 46px; height: 46px; stroke-width: 1.7; }
 .cena span { font-size: 18px; font-weight: 800; }
@@ -122,12 +125,13 @@ nav button.on { background: #eef1fb; color: #15193a; }
 .barra .rot { font-weight: 800; color: var(--suave); font-size: 15px; }
 
 .efeito { border-radius: var(--raio); display: flex; flex-direction: column; justify-content: flex-end; padding: 14px; text-align: left; font-weight: 800; font-size: 17px;
-  background: linear-gradient(120deg, var(--g)); background-size: 300% 300%; animation: mexe 9s ease-in-out infinite; position: relative; overflow: hidden;
-  box-shadow: inset 0 0 0 1px var(--linha); text-shadow: 0 1px 6px rgba(0,0,0,.45); }
-.efeito::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 40%, rgba(10,14,32,.55)); }
+  position: relative; overflow: hidden; isolation: isolate; text-shadow: 0 1px 6px rgba(0,0,0,.45); }
+.efeito::after { content: ""; position: absolute; z-index: -1; top: 0; bottom: 0; left: 0; width: 300%; background: linear-gradient(110deg, var(--g)); animation: desliza-efeito 9s steps(45) infinite; will-change: transform; }
+.efeito::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 40%, rgba(10,14,32,.55)); box-shadow: inset 0 0 0 1px var(--linha); border-radius: inherit; }
 .efeito span { position: relative; }
-.efeito.ativa { box-shadow: inset 0 0 0 3px #fff; }
-@keyframes mexe { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+.efeito.ativa { outline: 3px solid #fff; outline-offset: -3px; }
+@keyframes desliza-cena { 0%,100% { transform: translateX(0); } 50% { transform: translateX(-61.54%); } }
+@keyframes desliza-efeito { 0%,100% { transform: translateX(0); } 50% { transform: translateX(-66.67%); } }
 
 .lista { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-content: start; scrollbar-width: none; }
 .luz { background: var(--painel); border-radius: 18px; padding: 12px; box-shadow: inset 0 0 0 1px var(--linha); display: flex; flex-direction: column; gap: 10px; }
@@ -237,11 +241,37 @@ nav button.on { background: #eef1fb; color: #15193a; }
 .teclas .larga { max-width: 340px; flex: 5; }
 .teclas .media { max-width: 130px; flex: 2; font-size: 16px; }
 .teclas.simb button { font-size: 18px; }
+/* som */
+.topo h1 { line-height: 1.1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }  /* com a pilula de som ao lado, o nome da sala pode quebrar em 2 linhas */
+.pilula-som { height: 50px; max-width: 150px; padding: 0 14px 0 11px; border-radius: 16px; background: #eef1fb; color: #15193a; display: flex; align-items: center; gap: 7px; flex: none;
+  font-weight: 900; font-size: 15px; box-shadow: 0 0 14px color-mix(in srgb, var(--cor-atual) 55%, transparent); }
+.pilula-som svg.i { width: 22px; height: 22px; stroke-width: 2.2; }
+.pilula-som span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.veu-som { position: fixed; inset: 0; z-index: 8; display: none; } .veu-som.on { display: block; }
+.painel-som { position: fixed; z-index: 9; top: 84px; left: 14px; width: calc(31% - 14px); background: #1a2142; border-radius: 22px; padding: 16px; display: none; flex-direction: column; gap: 12px;
+  box-shadow: 0 16px 50px rgba(0,0,0,.55), inset 0 0 0 1px var(--linha); }
+.painel-som.on { display: flex; }
+.painel-som .cab { display: flex; justify-content: space-between; font-weight: 800; font-size: 15px; color: var(--suave); }
+.painel-som .cab span:last-child { color: var(--texto); }
+.painel-som .btn2 { height: 50px; }
+.som-sec { background: var(--painel); border-radius: 18px; box-shadow: inset 0 0 0 1px var(--linha); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; flex: none; }
+.som-sec .tit { font-size: 13px; font-weight: 900; color: var(--suave); text-transform: uppercase; letter-spacing: .6px; }
+.som-linha { display: flex; align-items: center; gap: 10px; }
+.interr { flex: 1; height: 46px; border-radius: 14px; background: var(--painel2); box-shadow: inset 0 0 0 1px var(--linha); display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 12px 0 14px;
+  font-weight: 800; font-size: 14px; text-align: left; }
+.interr .sw { width: 46px; height: 26px; border-radius: 99px; background: rgba(255,255,255,.18); position: relative; flex: none; transition: background .25s; }
+.interr .sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #c9cee3; transition: left .25s; }
+.interr.on .sw { background: #3ddc84; } .interr.on .sw::after { left: 23px; background: #fff; }
+.vol-aj { flex: 1; display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 14px; color: var(--suave); }
+.vol-aj input { flex: 1; width: auto; height: 34px; }
+.vol-aj b { color: var(--texto); min-width: 40px; text-align: right; }
+.cena svg.i.nota-som, .efeito svg.i.nota-som { position: absolute; top: 9px; right: 9px; width: 22px; height: 22px; opacity: .85; }
 </style>
 </head>
 <body class="home">
 <aside>
   <div class="topo"><div><h1 id="nomeSala">Sala Sensorial</h1><p id="resumo">conectando...</p></div>
+    <button class="pilula-som" id="pilulaSom" hidden aria-label="Som tocando, abrir volume"><svg class="i" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg><span id="pilulaNome"></span></button>
     <button class="botao-power" id="desligar" aria-label="Desligar tudo"><svg class="i" viewBox="0 0 24 24"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/></svg></button></div>
   <div class="painel-home">
     <div class="relogio"><div class="hora" id="hora">--:--</div><div class="data" id="data"></div></div>
@@ -293,9 +323,27 @@ nav button.on { background: #eef1fb; color: #15193a; }
       <button class="btn2" id="btnCidade"></button>
       <button class="btn2" id="btnHora"></button>
     </div>
+    <div class="som-sec">
+      <div class="tit">Som</div>
+      <div class="som-linha">
+        <button class="interr on" id="swSom" role="switch" aria-checked="true"><span>Som nas cenas e efeitos</span><i class="sw"></i></button>
+        <button class="interr on" id="swReagir" role="switch" aria-checked="true"><span>Luz acompanha o som</span><i class="sw"></i></button>
+      </div>
+      <div class="som-linha">
+        <div class="vol-aj"><span>Volume</span><input type="range" id="volAjuste" min="0" max="100" value="35"><b id="volAjusteTxt">35%</b></div>
+        <button class="btn2" id="btnTestarSom">Testar som</button>
+      </div>
+    </div>
     <div class="lista" id="lista"></div>
   </section>
 </main>
+
+<div class="veu-som" id="veuSom"></div>
+<div class="painel-som" id="painelSom">
+  <div class="cab"><span>Volume do som</span><span id="volPainelTxt">35%</span></div>
+  <input type="range" id="volPainel" min="0" max="100" value="35">
+  <button class="btn2" id="pararSom">Parar som</button>
+</div>
 
 <div class="folha" id="folhaAssist">
   <div class="assist">
@@ -388,6 +436,7 @@ const IC = {
   chuva: P('<path d="M17.5 15H8a5 5 0 1 1 .9-9.9A6 6 0 0 1 20 8.5 3.5 3.5 0 0 1 17.5 15z"/><path d="M8 18l-1 3M12 18l-1 3M16 18l-1 3"/>'),
   raio: P('<path d="M17.5 14H8a5 5 0 1 1 .9-9.9A6 6 0 0 1 20 7.5 3.5 3.5 0 0 1 17.5 14z"/><path d="M12 14l-2 4h4l-2 4"/>'),
   lua: P('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>'),
+  nota: P('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>'),
   editar: P('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'),
 };
 // [id, nome, cor de destaque, paleta do cartao (a mesma que a cena passeia nas luzes)]
@@ -430,8 +479,8 @@ $("#cenas").innerHTML = CENAS.map(([id, n, c, g]) => `<button class="cena" data-
 $$(".cena").forEach(b => b.onclick = () => {
   const id = b.dataset.id;
   marcar(".cena", b);
-  if (id === "desligar") { post("/api/ligar", { on: false }); setCor("#3a3f52"); }
-  else { post("/api/cena", { nome: id }); setCor(b.style.getPropertyValue("--c")); }
+  if (id === "desligar") { post("/api/ligar", { on: false }); setCor("#3a3f52"); Som.parar(); }
+  else { post("/api/cena", { nome: id }); setCor(b.style.getPropertyValue("--c")); Som.cenaEfeito("cena", id); }
 });
 
 // branco
@@ -454,10 +503,10 @@ $$("#satChave button").forEach(b => b.onclick = () => { marcar("#satChave button
 
 // efeitos
 $("#efeitos").innerHTML = EFEITOS.map(([id, n, g]) => `<button class="efeito" data-id="${id}" style="--g:${g}"><span>${n}</span></button>`).join("");
-$$(".efeito").forEach(b => b.onclick = () => { marcar(".efeito", b); marcar(".cena", null); post("/api/efeito", { nome: b.dataset.id, vel }); });
+$$(".efeito").forEach(b => b.onclick = () => { marcar(".efeito", b); marcar(".cena", null); post("/api/efeito", { nome: b.dataset.id, vel }); Som.cenaEfeito("efeito", b.dataset.id); });
 $$("#velChave button").forEach(b => b.onclick = () => {
   marcar("#velChave button", b); vel = +b.dataset.v;
-  const at = document.querySelector(".efeito.ativa"); if (at) post("/api/efeito", { nome: at.dataset.id, vel });
+  const at = document.querySelector(".efeito.ativa"); if (at) { post("/api/efeito", { nome: at.dataset.id, vel }); Som.rearmar(); }
 });
 
 // inicio
@@ -509,7 +558,7 @@ $("#brilho").addEventListener("input", e => {
   $("#brilhoTxt").textContent = e.target.value + "%";
   clearTimeout(tBrilho); tBrilho = setTimeout(() => post("/api/brilho", { v: e.target.value / 100 }), 120);
 });
-$("#desligar").onclick = () => { post("/api/ligar", { on: false }); setCor("#3a3f52"); };
+$("#desligar").onclick = () => { post("/api/ligar", { on: false }); setCor("#3a3f52"); Som.parar(); };
 
 // alvos (coluna esquerda) e lista de luzes
 function desenharAlvos() {
@@ -819,6 +868,279 @@ async function atualizar() {
 atualizar();
 setInterval(atualizar, 4000);
 document.addEventListener("contextmenu", e => e.preventDefault());
+
+// ---------- som das cenas e efeitos (Web Audio; toca aqui na tela, nao no servidor) ----------
+// O mapa de sons vem de static/sons/sons.json. A tela e o maestro da luz: sabe em que ponto do audio esta e avisa
+// o servidor de cada estalo (pulso) ou do nivel da onda; o servidor so aplica na luz (POST /api/reacao).
+const Som = (() => {
+  let T = { fadeEntrada: 4, fadeTroca: 3, fadeSaida: 3, xfPlaylist: 4, xfLoop: 3, primeiroBicho: 30, raro: 300 };  // sons.json pode trocar (chave "tempos")
+  const PULSO_MIN = 0.5;  // s entre pulsos enviados (seguranca sensorial; o servidor confere de novo)
+  let ctx = null, mestre = null, mapa = { sons: {}, cenas: {}, efeitos: {} };
+  let prefs = { ligado: true, volume: 0.35, reagir: true };
+  let sess = null, ultimo = null, tGravar = null, tUltPulso = 0, relogio = null;
+  const ouvintes = [], log = [];
+  const url = f => "/static/sons/" + encodeURIComponent(f);
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const reg = (ev, d) => { log.push({ t: Math.round(performance.now()), ev, ...d }); if (log.length > 400) log.shift(); };
+  const avisar = () => ouvintes.forEach(f => f());
+  const antecipaDe = s => s.def.antecipa ?? mapa.antecipa ?? 0.15;
+  const enviar = corpo => fetch("/api/reacao", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo) }).catch(() => {});
+
+  const pronto = Promise.all([
+    fetch("/static/sons/sons.json", { cache: "no-store" }).then(r => r.ok ? r.json() : null).catch(() => null),
+    fetch("/api/som").then(r => r.json()).catch(() => null),
+  ]).then(([m, p]) => {
+    if (m && m.sons) { mapa = { cenas: {}, efeitos: {}, ...m }; T = { ...T, ...(m.tempos || {}) }; }
+    if (p) prefs = { ...prefs, ...p };
+    avisar();
+  });
+
+  function iniciarCtx() {
+    if (!ctx) {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      mestre = ctx.createGain();
+      mestre.gain.value = prefs.volume ** 2;  // volume percebido
+      mestre.connect(ctx.destination);
+    }
+    if (ctx.state !== "running") ctx.resume();  // precisa estar dentro do toque
+  }
+  const aplicarVolume = () => { if (mestre) mestre.gain.setTargetAtTime(prefs.volume ** 2, ctx.currentTime, 0.05); };
+
+  // ---------- faixas ----------
+  function sorteiaFaixa(s) {
+    const f = s.def.faixas;
+    if (s.def.tipo === "loop" || f.length === 1) return f[0];
+    const livres = f.filter(x => x !== s.ultFaixa);
+    return livres[Math.floor(Math.random() * livres.length)];
+  }
+
+  function descartar(p) {
+    try { p.el.pause(); p.el.removeAttribute("src"); p.el.load(); } catch (e) {}
+    try { p.src.disconnect(); p.g.disconnect(); } catch (e) {}
+  }
+
+  // comeca uma faixa: a primeira entra direto (o fade e da sessao), as seguintes entram em crossfade
+  function iniciarFaixa(s, arquivo, primeira, xf) {
+    if (s.morta) return;
+    const p = { arquivo, el: new Audio(), g: ctx.createGain(), src: null, pronto: false, dur: 0, tPlay: 0, proxima: false };
+    p.g.gain.value = primeira ? 1 : 0;
+    p.src = ctx.createMediaElementSource(p.el);
+    p.src.connect(p.g); p.g.connect(s.rel);
+    p.el.preload = "auto";
+    p.el.src = url(arquivo);
+    s.pistas.push(p); s.ultFaixa = arquivo;
+    p.el.addEventListener("ended", () => { if (!p.proxima && !s.morta) { p.proxima = true; seguir(s, 0.6); } });
+    p.el.play().then(() => {
+      p.pronto = true; p.dur = p.el.duration; p.tPlay = ctx.currentTime; s.erros = 0;
+      if (!primeira) { const t = ctx.currentTime; p.g.gain.setValueAtTime(0, t); p.g.gain.linearRampToValueAtTime(1, t + xf); }
+      reg("faixa", { arquivo, xf });
+    }).catch(() => {  // arquivo faltando ou sem suporte: segue sem som, sem erro na tela
+      s.pistas = s.pistas.filter(x => x !== p); descartar(p); s.erros = (s.erros || 0) + 1; reg("faixa-falhou", { arquivo });
+      if (s.erros < 3 && !primeira && !s.morta) setTimeout(() => seguir(s, 0.6), 5000);
+    });
+    return p;
+  }
+  // troca de faixa por crossfade: a que esta tocando sai, a nova entra
+  function seguir(s, xf) {
+    const velha = s.pistas.filter(p => p.pronto).slice(-1)[0];
+    if (velha) {
+      const t = ctx.currentTime;
+      velha.proxima = true; velha.g.gain.cancelScheduledValues(t); velha.g.gain.setValueAtTime(velha.g.gain.value, t); velha.g.gain.linearRampToValueAtTime(0, t + xf);
+      setTimeout(() => { s.pistas = s.pistas.filter(x => x !== velha); descartar(velha); }, (xf + 0.5) * 1000);
+    }
+    iniciarFaixa(s, sorteiaFaixa(s), false, xf);
+  }
+  function dono(s) {  // a faixa que manda no maestro: a de maior ganho (a nova assume na metade do crossfade)
+    const l = s.pistas.filter(p => p.pronto && !p.saindo);
+    const u = l[l.length - 1];
+    if (l.length > 1 && ctx.currentTime - u.tPlay < s.xf / 2) return l[l.length - 2];
+    return u;
+  }
+
+  // ---------- bichos (eventos sorteados por cima do fundo) ----------
+  function agendarBicho(s, primeiro) {
+    const ev = s.def.eventos; if (!ev || s.morta) return;
+    const [a, b] = ev.intervalo || [40, 120];
+    let esp = rnd(a, b); if (primeiro) esp = Math.max(esp, T.primeiroBicho);
+    s.tBicho = setTimeout(() => tocarBicho(s), esp * 1000);
+  }
+  function tocarBicho(s) {
+    if (s.morta || sess !== s) return;
+    const agora = performance.now() / 1000;
+    if (s.bicho) return agendarBicho(s);  // nunca dois ao mesmo tempo
+    let itens = s.def.eventos.itens.filter(i => i.faixa !== s.ultBicho && !((i.peso ?? 1) <= 1 && agora - s.ultRaro < T.raro));
+    if (!itens.length) return agendarBicho(s);
+    let r = Math.random() * itens.reduce((t, i) => t + (i.peso ?? 1), 0), item = itens[0];
+    for (const i of itens) { r -= (i.peso ?? 1); if (r <= 0) { item = i; break; } }
+    const el = new Audio(), g = ctx.createGain(), pan = ctx.createStereoPanner(), src = ctx.createMediaElementSource(el);
+    g.gain.value = item.ganho ?? 1; pan.pan.value = rnd(-0.6, 0.6);
+    src.connect(g); g.connect(pan); pan.connect(s.rel);
+    const b = { el, nodes: [src, g, pan] };
+    s.bicho = b; s.ultBicho = item.faixa; if ((item.peso ?? 1) <= 1) s.ultRaro = agora;
+    const fim = () => { if (s.bicho === b) s.bicho = null; try { el.pause(); el.removeAttribute("src"); el.load(); b.nodes.forEach(n => n.disconnect()); } catch (e) {} };
+    el.addEventListener("ended", fim); el.addEventListener("error", fim);
+    el.src = url(item.faixa);
+    el.play().then(() => reg("bicho", { faixa: item.faixa, pan: +pan.pan.value.toFixed(2) })).catch(fim);
+    agendarBicho(s);
+  }
+
+  // ---------- maestro da luz ----------
+  function maestro(s, agora) {
+    if (!s.marcas || !prefs.reagir || s.saindo) return;
+    const d = dono(s); if (!d) return;
+    const ant = antecipaDe(s), pos = d.el.currentTime + ant;
+    if (s.donoAnt !== d) { s.donoAnt = d; s.ult = pos; }
+    if (s.marcas.pulsos) {
+      if (pos < s.ult - 0.5) s.ult = pos;  // o audio voltou (emenda do loop)
+      let forte = null;
+      const desde = Math.max(s.ult, pos - 0.3);  // se a tela travou um instante, estalo velho nao vira pulso atrasado
+      for (const [t, f] of s.marcas.pulsos) if (t > desde && t <= pos && (!forte || f > forte)) forte = f;
+      s.ult = pos;
+      if (forte !== null && performance.now() - tUltPulso >= PULSO_MIN * 1000) {
+        tUltPulso = performance.now();
+        enviar({ alvo: s.alvo, pulso: forte * s.reacao });
+        reg("pulso", { forca: +(forte * s.reacao).toFixed(2), pos: +(pos - ant).toFixed(2) });
+      }
+    } else if (s.marcas.nivel && agora - s.tNivel >= 200) {
+      s.tNivel = agora;
+      const n = s.marcas.nivel, i = Math.max(0, Math.min(n.length - 1, Math.floor(pos / (s.marcas.passo || 0.2))));
+      const v = n[i] * s.reacao;
+      if (Math.abs(v - s.ultNivel) > 0.03) { s.ultNivel = v; enviar({ alvo: s.alvo, nivel: +v.toFixed(3) }); reg("nivel", { v: +v.toFixed(2) }); }
+    }
+  }
+  function armar(s) { if (s && s.marcas && prefs.reagir && s.alvo) enviar({ alvo: s.alvo }); }
+
+  const estat = { n: 0, u: 0, maxGap: 0 };  // diagnostico: quantos ciclos do maestro e a maior pausa entre eles (ms)
+  function passo() {
+    const s = sess; if (!s || !ctx) return;
+    const agora = performance.now();
+    estat.n++; if (estat.u) estat.maxGap = Math.max(estat.maxGap, agora - estat.u); estat.u = agora;
+    const d = dono(s);
+    if (d && !d.proxima && d.dur && d.el.currentTime >= d.dur - s.xf) { d.proxima = true; seguir(s, s.xf); }
+    maestro(s, agora);
+  }
+
+  // ---------- sessoes (um som por vez; trocar = crossfade) ----------
+  function sair(s, seg) {
+    if (s.saindo) return;
+    s.saindo = true; clearTimeout(s.tBicho);
+    const t = ctx.currentTime;
+    s.fade.gain.cancelScheduledValues(t); s.fade.gain.setValueAtTime(s.fade.gain.value, t); s.fade.gain.linearRampToValueAtTime(0, t + seg);
+    setTimeout(() => { s.morta = true; clearTimeout(s.tBicho); s.pistas.forEach(descartar); s.pistas = []; if (s.bicho) { try { s.bicho.el.pause(); } catch (e) {} } try { s.rel.disconnect(); s.fade.disconnect(); } catch (e) {} }, (seg + 0.3) * 1000);
+  }
+  function ajustar(s, op) {
+    const t = ctx.currentTime;
+    s.rel.gain.cancelScheduledValues(t); s.rel.gain.setValueAtTime(s.rel.gain.value, t);
+    s.rel.gain.linearRampToValueAtTime((s.def.ganho ?? 1) * (op.ganho ?? 1), t + 2);  // so abaixa/sobe, nao reinicia
+    s.reacao = op.reacao ?? 1;
+    if (op.alvo && op.alvo !== s.alvo) { s.alvo = op.alvo; s.donoAnt = null; setTimeout(() => armar(s), 400); }
+    reg("ajuste", { chave: s.chave, ganho: op.ganho ?? 1 });
+  }
+
+  async function tocar(chave, op = {}) {
+    iniciarCtx();
+    await pronto;
+    if (!prefs.ligado) return;
+    const def = mapa.sons[chave];
+    if (!def || !def.faixas || !def.faixas.length) return parar();
+    if (sess && sess.chave === chave && !sess.saindo) return ajustar(sess, op);
+    const velha = sess && !sess.saindo ? sess : null;
+    const rel = ctx.createGain(), fade = ctx.createGain();
+    rel.gain.value = (def.ganho ?? 1) * (op.ganho ?? 1); fade.gain.value = 0;
+    rel.connect(fade); fade.connect(mestre);
+    const s = { chave, def, rel, fade, pistas: [], alvo: op.alvo, reacao: op.reacao ?? 1, xf: def.tipo === "playlist" ? T.xfPlaylist : T.xfLoop,
+      marcas: null, ult: 0, ultNivel: -1, tNivel: 0, donoAnt: null, ultRaro: -1e9, ultBicho: null, bicho: null, saindo: false, morta: false };
+    sess = s;
+    const dur = velha ? T.fadeTroca : (op.fadeEntrada ?? T.fadeEntrada);
+    const t = ctx.currentTime;
+    fade.gain.setValueAtTime(0, t); fade.gain.linearRampToValueAtTime(1, t + dur);
+    if (velha) sair(velha, T.fadeTroca);
+    iniciarFaixa(s, sorteiaFaixa(s), true, 0);
+    agendarBicho(s, true);
+    if (def.marcas) fetch(url(def.marcas)).then(r => r.ok ? r.json() : null).then(m => { if (m && !s.morta) { s.marcas = m; armar(s); } }).catch(() => {});
+    if (!relogio) relogio = setInterval(passo, 30);
+    reg("tocar", { chave, fade: dur });
+    avisar();
+  }
+  function parar(seg = T.fadeSaida) {
+    const s = sess;
+    if (!s) return;
+    sess = null; ultimo = null;
+    if (ctx) sair(s, seg);
+    if (s.marcas) enviar({ alvo: null });
+    avisar();
+  }
+
+  // cena ou efeito: procura no mapa e toca (ou para, se nao tem som)
+  function cenaEfeito(tipo, id) {
+    const e = (tipo === "cena" ? mapa.cenas : mapa.efeitos)[id];
+    if (!e) { parar(); return; }
+    ultimo = { tipo, id };  // para religar o som se o interruptor voltar a ligado
+    const o = typeof e === "string" ? { som: e } : e;
+    tocar(o.som, { ganho: o.ganho, reacao: o.reacao, alvo: tipo === "cena" ? "cena_" + id : id });
+  }
+  const gravar = () => { clearTimeout(tGravar); tGravar = setTimeout(() => fetch("/api/som", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(prefs) }).catch(() => {}), 1000); };
+
+  return {
+    tocar, parar, cenaEfeito, pronto, log, estat,
+    get prefs() { return prefs; }, get atual() { return sess && !sess.saindo ? sess : null; }, get mapa() { return mapa; },
+    onMudou: f => ouvintes.push(f),
+    volume(v) { prefs.volume = Math.max(0, Math.min(1, v)); aplicarVolume(); gravar(); avisar(); },
+    ligado(b) {
+      prefs.ligado = b; gravar();
+      if (!b) { const u = ultimo; parar(); ultimo = u; } else if (ultimo) cenaEfeito(ultimo.tipo, ultimo.id);
+      avisar();
+    },
+    reagir(b) { prefs.reagir = b; gravar(); if (!b) { if (sess && sess.marcas) enviar({ alvo: null }); } else armar(sess); avisar(); },
+    rearmar() { setTimeout(() => armar(sess), 400); },
+    tem(tipo, id) { return !!(tipo === "cena" ? mapa.cenas : mapa.efeitos)[id]; },
+    // 5 s da Tranquila, so se nada estiver tocando
+    async testar() {
+      await pronto;
+      if (sess) return false;
+      await tocar("tranquila", { fadeEntrada: 1.5 });
+      setTimeout(() => { if (sess && sess.chave === "tranquila") parar(1.5); }, 5000);
+      return true;
+    },
+    depurar() { const s = sess; return s ? { chave: s.chave, saindo: s.saindo, pistas: s.pistas.map(p => ({ a: p.arquivo, t: +p.el.currentTime.toFixed(2), g: +p.g.gain.value.toFixed(2), pronto: p.pronto })), rel: +s.rel.gain.value.toFixed(2), fade: +s.fade.gain.value.toFixed(2), mestre: +mestre.gain.value.toFixed(3), bicho: !!s.bicho } : null; },
+  };
+})();
+
+// pilula no topo, painel de volume e secao Som em Ajustes
+function desenharSom() {
+  const s = Som.atual, p = Som.prefs, pct = Math.round(p.volume * 100);
+  $("#pilulaSom").hidden = !s;
+  if (s) $("#pilulaNome").textContent = s.def.nome || s.chave;
+  $("#volPainel").value = pct; $("#volPainelTxt").textContent = pct + "%";
+  if (document.activeElement !== $("#volAjuste")) $("#volAjuste").value = pct;
+  $("#volAjusteTxt").textContent = pct + "%";
+  $("#swSom").classList.toggle("on", p.ligado); $("#swReagir").classList.toggle("on", p.reagir);
+  $("#swSom").setAttribute("aria-checked", p.ligado); $("#swReagir").setAttribute("aria-checked", p.reagir);
+  if (!s) fecharPainelSom();
+}
+function fecharPainelSom() { $("#painelSom").classList.remove("on"); $("#veuSom").classList.remove("on"); }
+Som.onMudou(desenharSom);
+$("#pilulaSom").onclick = () => { $("#painelSom").classList.add("on"); $("#veuSom").classList.add("on"); };
+$("#veuSom").onclick = fecharPainelSom;
+$("#pararSom").onclick = () => { Som.parar(); fecharPainelSom(); };
+$("#volPainel").addEventListener("input", e => Som.volume(e.target.value / 100));
+$("#volAjuste").addEventListener("input", e => Som.volume(e.target.value / 100));
+$("#swSom").onclick = () => Som.ligado(!Som.prefs.ligado);
+$("#swReagir").onclick = () => Som.reagir(!Som.prefs.reagir);
+$("#btnTestarSom").onclick = async () => {
+  const b = $("#btnTestarSom");
+  if (!(await Som.testar())) { b.textContent = "Já está tocando"; setTimeout(() => b.textContent = "Testar som", 2000); return; }
+  b.textContent = "Tocando..."; b.disabled = true; setTimeout(() => { b.textContent = "Testar som"; b.disabled = false; }, 5500);
+};
+// nota musical nos cartoes que tem som
+Som.pronto.then(() => {
+  $$(".cena, .efeito").forEach(b => {
+    const tipo = b.classList.contains("cena") ? "cena" : "efeito";
+    if (Som.tem(tipo, b.dataset.id)) b.insertAdjacentHTML("beforeend", IC.nota.replace('class="i"', 'class="i nota-som"'));
+  });
+  desenharSom();
+});
+
 
 // no Pi o toque chega como mouse (labwc mouseEmulation), entao arrastar para rolar e feito aqui
 (() => {

@@ -12,3 +12,6 @@ qr.svg
 venv/
 __pycache__/
 *.pyc
+# audio (a licenca do Pixabay proibe distribuir o arquivo sozinho; ficam so no Nextcloud e no Pi)
+app/static/sons/*.ogg
+app/static/sons/*.mp3

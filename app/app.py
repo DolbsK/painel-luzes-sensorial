@@ -12,7 +12,8 @@ from pydantic import BaseModel
 import magic
 import rede
 from ajustes import AJ, publico
-from efeitos import BRILHO_MAX, CENAS, EFEITOS, LOCALIZAR_S, ONDA, QUADRO_S, branco_rgb, quadro_efeito
+from efeitos import (BRILHO_MAX, CENAS, EFEITOS, LOCALIZAR_S, ONDA, QUADRO_S, branco_rgb, definir_reacao, esperar_quadro,
+                     quadro_efeito, reacao, reagir, zerar_reacao)
 
 BASE = Path(__file__).parent
 CONFIG = BASE / "config.json"  # o que muda pela tela: nomes, removidos, cidade do clima, conta Smart Life
@@ -225,14 +226,16 @@ class Luz:
                 self._enviar({self._dp("liga"): True, self._dp("modo"): "colour"})
             tentou = 0
             while g == self.geracao:
-                if self.online or time.time() - tentou > 5:  # luz fora do ar: tenta de novo a cada 5 s
-                    tentou = time.time()
-                    h, s, v = quadro_efeito(e, vel, self.alvo_h, self.alvo_s, self.alvo_v, time.time())
+                n0, agora = reacao["n"], time.time()
+                if self.online or agora - tentou > 5:  # luz fora do ar: tenta de novo a cada 5 s
+                    tentou = agora
+                    h, s, v = quadro_efeito(e, vel, self.alvo_h, self.alvo_s, self.alvo_v, agora)
+                    h, s, v = reagir(nome, h, s, v, agora)  # luz acompanhando o som (so se a tela avisou)
                     with self.lock:
                         if g == self.geracao:
                             self._enviar({self._dp("cor"): self._cor(h, s, v)}, nowait=True)
                             self.h, self.s, self.v = h, s, v
-                time.sleep(QUADRO_S)
+                esperar_quadro(n0, time.time())
         threading.Thread(target=run, daemon=True).start()
 
     def brilho(self, v):
@@ -371,6 +374,7 @@ def api_cena(p: Pedido):
     c = CENAS.get(p.nome or "")
     if not c:
         return {"ok": False}
+    zerar_reacao()
     for l in alvos(p.alvos):
         if "passos" in c:
             threading.Thread(target=l.aplicar_efeito, args=("cena_" + p.nome, 1), daemon=True).start()
@@ -382,6 +386,7 @@ def api_cena(p: Pedido):
 
 @app.post("/api/cor")
 def api_cor(p: Pedido):
+    zerar_reacao()
     for l in alvos(p.alvos):
         l.transicao(p.h, p.s if p.s is not None else 0.75, dur=1.0)
     estado_geral["cena"] = None
@@ -390,6 +395,7 @@ def api_cor(p: Pedido):
 
 @app.post("/api/branco")
 def api_branco(p: Pedido):
+    zerar_reacao()
     for l in alvos(p.alvos):
         threading.Thread(target=l.branco, args=(max(0.0, min(1.0, p.t or 0)),), daemon=True).start()
     estado_geral["cena"] = None
@@ -398,6 +404,7 @@ def api_branco(p: Pedido):
 
 @app.post("/api/efeito")
 def api_efeito(p: Pedido):
+    zerar_reacao()
     for l in alvos(p.alvos):
         threading.Thread(target=l.aplicar_efeito, args=(p.nome, p.vel or 1), daemon=True).start()
     estado_geral["cena"] = None
@@ -413,6 +420,8 @@ def api_brilho(p: Pedido):
 
 @app.post("/api/ligar")
 def api_ligar(p: Pedido):
+    if not p.alvos:
+        zerar_reacao()
     for l in alvos(p.alvos):
         threading.Thread(target=l.ligar, args=(p.on,), daemon=True).start()
     if not p.on and not p.alvos:
@@ -436,6 +445,47 @@ def api_renomear(p: Pedido):
             config.setdefault("nomes", {})[l.id] = nome
     salvar_config(config)
     return {"ok": True}
+
+
+# ---------- som das cenas e efeitos (o som toca na tela; aqui so ficam as preferencias e a reacao da luz) ----------
+SOM_PADRAO = {"ligado": True, "volume": 0.35, "reagir": True}
+
+
+@app.get("/api/som")
+def api_som():
+    return {**SOM_PADRAO, **config.get("som", {})}
+
+
+class Som(BaseModel):
+    ligado: Optional[bool] = None
+    volume: Optional[float] = None
+    reagir: Optional[bool] = None
+
+
+@app.post("/api/som")
+def api_som_salvar(p: Som):
+    som = {**SOM_PADRAO, **config.get("som", {})}
+    if p.ligado is not None:
+        som["ligado"] = p.ligado
+    if p.reagir is not None:
+        som["reagir"] = p.reagir
+    if p.volume is not None:
+        som["volume"] = round(max(0.0, min(1.0, p.volume)), 2)
+    config["som"] = som
+    salvar_config(config)
+    return som
+
+
+class Reacao(BaseModel):
+    alvo: Optional[str] = None     # nome do efeito que esta tocando ("fogueira", "mar", "cena_aconchego"); vazio desliga
+    pulso: Optional[float] = None  # estalo, forca 0 a 1
+    nivel: Optional[float] = None  # onda, 0 a 1
+
+
+@app.post("/api/reacao")
+def api_reacao(p: Reacao):
+    """A tela avisa cada estalo ou o nivel da onda. Pulso a menos de 0,5 s do anterior e ignorado (seguranca sensorial)."""
+    return {"ok": definir_reacao(p.alvo, p.pulso, p.nivel)}
 
 
 @app.post("/api/recarregar")
