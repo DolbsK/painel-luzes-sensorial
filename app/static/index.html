@@ -255,6 +255,7 @@ nav button.on { background: #eef1fb; color: #15193a; }
 .painel-som .cab span:last-child { color: var(--texto); }
 .painel-som .btn2 { height: 50px; }
 .som-sec { background: var(--painel); border-radius: 18px; box-shadow: inset 0 0 0 1px var(--linha); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; flex: none; }
+.som-sec[hidden] { display: none; }
 .som-sec .tit { font-size: 13px; font-weight: 900; color: var(--suave); text-transform: uppercase; letter-spacing: .6px; }
 .som-linha { display: flex; align-items: center; gap: 10px; }
 .interr { flex: 1; height: 46px; border-radius: 14px; background: var(--painel2); box-shadow: inset 0 0 0 1px var(--linha); display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 12px 0 14px;
@@ -1094,6 +1095,7 @@ const Som = (() => {
     reagir(b) { prefs.reagir = b; gravar(); if (!b) { if (sess && sess.marcas) enviar({ alvo: null }); } else armar(sess); avisar(); },
     rearmar() { setTimeout(() => armar(sess), 400); },
     tem(tipo, id) { return !!(tipo === "cena" ? mapa.cenas : mapa.efeitos)[id]; },
+    algum() { return Object.keys(mapa.sons || {}).length > 0; },
     // 5 s da Tranquila, so se nada estiver tocando
     async testar() {
       await pronto;
@@ -1134,6 +1136,7 @@ $("#btnTestarSom").onclick = async () => {
 };
 // nota musical nos cartoes que tem som
 Som.pronto.then(() => {
+  $(".som-sec").hidden = !Som.algum();  // instalacao sem sons (sem sons.json): Ajustes nao mostra a secao Som
   $$(".cena, .efeito").forEach(b => {
     const tipo = b.classList.contains("cena") ? "cena" : "efeito";
     if (Som.tem(tipo, b.dataset.id)) b.insertAdjacentHTML("beforeend", IC.nota.replace('class="i"', 'class="i nota-som"'));
