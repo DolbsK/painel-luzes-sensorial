@@ -349,7 +349,8 @@ def alvos(ids: Optional[list[str]]):
 
 @app.get("/")
 def index():
-    return FileResponse(BASE / "static" / "index.html")
+    # no-cache: a tela sempre confere se o index.html mudou (senao, depois de atualizar, o Chromium segue com a versao velha)
+    return FileResponse(BASE / "static" / "index.html", headers={"Cache-Control": "no-cache"})
 
 
 @app.get("/api/estado")
