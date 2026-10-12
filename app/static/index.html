@@ -43,6 +43,33 @@ aside { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
 .alvo .off { opacity: .45; }
 .luz .ponto.pi { display: grid; place-items: center; } .luz .ponto.pi svg.i { width: 18px; height: 18px; stroke: #fff; }
 .alvo .alerta { color: #ffb35c; }
+.alvos .divisor { font-size: 12px; font-weight: 900; color: var(--suave); text-transform: uppercase; letter-spacing: .6px; margin: 6px 4px 0; flex: none; }
+.casa .sec.com-chave { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.sec .chave-grupo { height: 34px; padding: 0 14px; border-radius: 99px; background: var(--painel2); box-shadow: inset 0 0 0 1px var(--linha); font-size: 13px; font-weight: 800; color: var(--texto); text-transform: none; letter-spacing: 0; }
+.sec .chave-grupo.on { background: #eef1fb; color: #15193a; }
+.sub { display: none; flex: 1; min-height: 0; flex-direction: column; gap: 12px; }
+.sub.on { display: flex; }
+#subChave button { font-size: 16px; padding: 10px 26px; }
+.grupos-dica { flex: 1; margin: 0; }
+.grupos-cards { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-content: start; scrollbar-width: none; }
+.gcard { background: var(--painel); border-radius: 18px; padding: 14px; box-shadow: inset 0 0 0 1px var(--linha); display: flex; flex-direction: column; gap: 8px; }
+.gcard .cab { display: flex; align-items: center; gap: 10px; }
+.gcard .cab b { font-size: 18px; flex: 1; }
+.gcard .cab .btn2 { height: 40px; font-size: 14px; padding: 0 14px; }
+.gcard .cab .btn2 svg.i { width: 16px; height: 16px; margin-right: 5px; vertical-align: -3px; }
+.gcard .membros-txt { display: flex; flex-wrap: wrap; gap: 6px; }
+.gcard .membros-txt span { background: var(--painel2); border-radius: 99px; padding: 4px 10px; font-size: 13px; font-weight: 700; color: var(--suave); }
+.sistema-grade { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.sistema-grade .btn2 { height: 72px; font-size: 18px; text-align: left; padding: 0 20px; }
+.sistema-grade .btn2 svg.i { width: 22px; height: 22px; margin-right: 10px; vertical-align: -5px; }
+.grupos-linha .btn2 svg.i { width: 17px; height: 17px; margin-right: 6px; vertical-align: -3px; }
+.grupos-linha .btn2 small { color: var(--suave); font-weight: 700; margin-left: 6px; }
+.membros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; overflow-y: auto; min-height: 0; flex: 1; align-content: start; margin: 10px 0; }
+.membros button { min-height: 58px; border-radius: 14px; background: var(--painel2); box-shadow: inset 0 0 0 1px var(--linha); text-align: left; padding: 8px 12px; font-weight: 800; font-size: 15px; }
+.membros button small { display: block; font-size: 12px; color: var(--suave); font-weight: 700; margin-top: 2px; }
+.membros button.on { background: #eef1fb; color: #15193a; } .membros button.on small { color: #59607e; }
+.nome-grupo { width: 100%; height: 54px; border-radius: 14px; background: var(--painel2); box-shadow: inset 0 0 0 1px var(--linha); text-align: left; padding: 0 16px; font-size: 19px; font-weight: 800; flex: none; }
+.nome-grupo svg.i { width: 18px; height: 18px; vertical-align: -3px; margin-right: 4px; }
 .cartao-brilho { background: var(--painel); border-radius: var(--raio); padding: 12px 14px; box-shadow: inset 0 0 0 1px var(--linha); }
 .cartao-brilho .cab { display: flex; justify-content: space-between; font-weight: 800; font-size: 14px; color: var(--suave); margin-bottom: 8px; }
 .cartao-brilho .cab span:last-child { color: var(--texto); }
@@ -50,6 +77,8 @@ input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; hei
   background: linear-gradient(90deg, rgba(255,255,255,.08), var(--cor-atual)); }
 input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 46px; height: 46px; border-radius: 50%; background: #fff;
   border: 5px solid var(--cor-atual); box-shadow: 0 2px 10px rgba(0,0,0,.4); }
+#brilho.arco { background: linear-gradient(90deg, rgba(255,255,255,.08), #f25c5c, #f2a84c, #f2dc4c, #58d68d, #4cc3e0, #5d7de2, #a569bd); }
+#brilho.arco::-webkit-slider-thumb { border-color: transparent; background: linear-gradient(#fff, #fff) padding-box, conic-gradient(#f25c5c, #f2a84c, #f2dc4c, #58d68d, #4cc3e0, #5d7de2, #a569bd, #f25c5c) border-box; }
 /* Inicio: relogio e clima na esquerda, aparelhos na direita */
 .painel-home { display: none; flex: 1; flex-direction: column; gap: 12px; min-height: 0; }
 body.home .painel-home { display: flex; } body.home .alvos, body.home .cartao-brilho { display: none; }
@@ -81,6 +110,7 @@ body.home .painel-home { display: flex; } body.home .alvos, body.home .cartao-br
 .disp.on small { color: #4d5577; }
 .disp.on .d-ic { background: var(--c); box-shadow: 0 0 16px color-mix(in srgb, var(--c) 70%, transparent); color: #fff; }
 .disp.on .d-chave { background: #15193a; } .disp.on .d-chave::after { left: 23px; background: #fff; }
+.alvo .ponto.arco, .luz .ponto.arco, .disp.on .d-ic.arco { background: conic-gradient(#f25c5c, #f2a84c, #f2dc4c, #58d68d, #4cc3e0, #5d7de2, #a569bd, #f25c5c); box-shadow: 0 0 14px rgba(255,255,255,.35); }
 .disp.fora { opacity: .5; } .disp.fora small { color: #ffb35c; }
 
 /* direita */
@@ -153,6 +183,9 @@ nav button.on { background: #eef1fb; color: #15193a; }
 .btn2 { height: 46px; padding: 0 18px; border-radius: 14px; background: var(--painel2); font-weight: 800; font-size: 15px; box-shadow: inset 0 0 0 1px var(--linha); }
 .btn2.destaque { background: #eef1fb; color: #15193a; }
 .btn2.perigo { background: #e5484d; color: #fff; }
+.opcoes-reiniciar { display: grid; gap: 14px; margin: 18px 0; }
+.opcoes-reiniciar button { text-align: left; padding: 18px 20px; border-radius: 18px; background: var(--painel2); box-shadow: inset 0 0 0 1px var(--linha); }
+.opcoes-reiniciar b { display: block; font-size: 21px; } .opcoes-reiniciar span { display: block; margin-top: 4px; color: var(--suave); font-size: 16px; font-weight: 700; }
 .barra-luzes .btn2 svg.i { width: 19px; height: 19px; margin-right: 6px; vertical-align: -4px; }
 .hora-visor { text-align: center; margin: 4px 0 14px; }
 .hora-visor b { display: block; font-size: 58px; font-weight: 900; line-height: 1.05; }
@@ -315,16 +348,28 @@ nav button.on { background: #eef1fb; color: #15193a; }
   </section>
 
   <section class="aba" id="aba-luzes">
+    <div class="chave sub-chave" id="subChave"><button data-sub="aparelhos" class="on">Aparelhos</button><button data-sub="grupos">Grupos</button><button data-sub="som">Som</button><button data-sub="sistema">Sistema</button></div>
+    <div class="sub on" data-subaba="aparelhos">
     <div class="barra-luzes">
       <span class="chip-net" id="chipNet"><i></i><span>verificando...</span></span>
-      <button class="btn2" id="btnWifi">Conectar Wi-Fi</button>
       <button class="btn2 destaque" id="btnAdd">+ Adicionar luz ou interruptor</button>
     </div>
-    <div class="barra-luzes">
-      <button class="btn2" id="btnCidade"></button>
-      <button class="btn2" id="btnHora"></button>
+    <div class="lista" id="lista"></div>
     </div>
-    <div class="som-sec">
+    <div class="sub" data-subaba="grupos">
+      <div class="barra-luzes"><p class="suave grupos-dica">Toque num grupo na lista da esquerda para mudar todas as luzes dele de uma vez.</p><button class="btn2 destaque" id="btnNovoGrupo">+ Novo grupo</button></div>
+      <div class="grupos-cards" id="gruposLista"></div>
+    </div>
+    <div class="sub" data-subaba="sistema">
+      <div class="sistema-grade">
+        <button class="btn2" id="btnWifi">Conectar Wi-Fi</button>
+        <button class="btn2" id="btnCidade"></button>
+        <button class="btn2" id="btnHora"></button>
+        <button class="btn2" id="btnReiniciar"></button>
+      </div>
+    </div>
+    <div class="sub" data-subaba="som">
+    <div class="som-sec" id="secSom">
       <div class="tit">Som</div>
       <div class="som-linha">
         <button class="interr on" id="swSom" role="switch" aria-checked="true"><span>Som nas cenas e efeitos</span><i class="sw"></i></button>
@@ -335,7 +380,7 @@ nav button.on { background: #eef1fb; color: #15193a; }
         <button class="btn2" id="btnTestarSom">Testar som</button>
       </div>
     </div>
-    <div class="lista" id="lista"></div>
+    </div>
   </section>
 </main>
 
@@ -386,6 +431,22 @@ nav button.on { background: #eef1fb; color: #15193a; }
   </div>
 </div>
 
+<div class="folha" id="folhaGrupo">
+  <div class="assist wifi">
+    <div class="conteudo">
+      <h2 id="grupoTitulo">Grupo</h2>
+      <button class="nome-grupo" id="grupoNome"></button>
+      <p class="suave" style="margin-top:10px">Toque nas luzes que fazem parte deste grupo. Cada luz fica em um grupo só.</p>
+      <div class="membros" id="grupoMembros"></div>
+      <div class="rodape"><button class="btn2" id="grupoCancelar">Cancelar</button><button class="btn2" id="grupoExcluir">Excluir grupo</button><span id="grupoMsg"></span><button class="btn2 destaque" id="grupoSalvar">Salvar</button></div>
+    </div>
+  </div>
+</div>
+<div class="folha" id="folhaReiniciar">
+  <div class="assist wifi">
+    <div class="conteudo" id="reiniciarCorpo"></div>
+  </div>
+</div>
 <div class="folha" id="folhaHora">
   <div class="assist wifi">
     <div class="conteudo">
@@ -438,6 +499,7 @@ const IC = {
   raio: P('<path d="M17.5 14H8a5 5 0 1 1 .9-9.9A6 6 0 0 1 20 7.5 3.5 3.5 0 0 1 17.5 14z"/><path d="M12 14l-2 4h4l-2 4"/>'),
   lua: P('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>'),
   nota: P('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>'),
+  wifi: P('<path d="M2 9a15 15 0 0 1 20 0"/><path d="M5 12.5a10 10 0 0 1 14 0"/><path d="M8.5 16a5 5 0 0 1 7 0"/><path d="M12 19.5h.01"/>'),
   editar: P('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'),
 };
 // [id, nome, cor de destaque, paleta do cartao (a mesma que a cena passeia nas luzes)]
@@ -460,11 +522,15 @@ const $$ = s => document.querySelectorAll(s);
 const esc = t => String(t ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 let AJ = { sala: "Sala Sensorial", wifi_sala: { ssid: "", senha: "" }, hotspot: { ssid: "", senha: "" } };
 fetch("/api/ajustes").then(r => r.json()).then(a => { AJ = a; $("#nomeSala").textContent = a.sala; document.title = a.sala; }).catch(() => {});
-let todos = [], inters = [], luzes = [], sel = [], sat = 0.75, vel = 1;
+let todos = [], inters = [], luzes = [], sel = [], sat = 0.75, vel = 1, grupos = [];
+// grupo: so as luzes que existem hoje (luz removida some do grupo na tela)
+const membros = g => luzes.filter(l => g.ids.includes(l.id));
+const mesmaSel = ids => ids.length > 0 && ids.length === sel.length && ids.every(i => sel.includes(i));
 const post = (url, corpo = {}) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ alvos: sel.length ? sel : null, ...corpo }) }).catch(() => {});
 const corModo = id => { const c = CENAS.find(x => "cena_" + x[0] === id); if (c) return c[2]; const e = EFEITOS.find(x => x[0] === id); return e ? e[2].split(",")[0] : "hsl(300 60% 65%)"; };
 const corCss = l => !l.ligada || !l.online ? null : l.tipo === "interruptor" ? "#ffd36b" : l.modo === "white" ? "#fff1dc" : l.modo === "scene" ? corModo(l.efeito) : `hsl(${l.h} ${Math.round(l.s * 75) + 10}% ${60 + (1 - l.s) * 25}%)`;
+const arco = l => l.ligada && l.online && l.modo === "scene" && l.efeito === "arcoiris"; // icone com arco-iris fixo
 const setCor = c => document.documentElement.style.setProperty("--cor-atual", c);
 
 // abas
@@ -518,11 +584,22 @@ function desenharCasa() {
     const st = !l.online ? "sem resposta" : !l.ligada ? (inter ? "Desligado" : "Desligada")
       : inter ? "Ligado" : (l.modo === "scene" ? (NOMES_MODO[l.efeito] || "Efeito") : l.modo === "white" ? "Branco" : "Cor") + " · " + Math.round(l.v * 100) + "%";
     return `<button class="disp ${on ? "on" : ""} ${l.online ? "" : "fora"}" data-disp="${l.id}" style="--c:${c}">
-      <div class="d-topo"><span class="d-ic">${inter ? IC.inter : IC.luz}</span><span class="d-chave"></span></div><b>${esc(l.nome)}</b><small>${st}</small></button>`;
+      <div class="d-topo"><span class="d-ic ${arco(l) ? "arco" : ""}">${inter ? IC.inter : IC.luz}</span><span class="d-chave"></span></div><b>${esc(l.nome)}</b><small>${st}</small></button>`;
   };
-  $("#casa").innerHTML = (luzes.length ? `<div class="sec">Luzes</div><div class="grade-disp">${luzes.map(l => cartao(l, false)).join("")}</div>` : "")
+  const comGrupo = grupos.filter(g => membros(g).length), soltas = luzes.filter(l => !comGrupo.some(g => g.ids.includes(l.id)));
+  const secao = (titulo, ls, gid) => {
+    const algumaAcesa = ls.some(l => l.ligada && l.online);
+    const chave = gid ? `<button class="chave-grupo ${algumaAcesa ? "on" : ""}" data-chave-grupo="${gid}">${algumaAcesa ? "Desligar grupo" : "Ligar grupo"}</button>` : "";
+    return `<div class="sec ${gid ? "com-chave" : ""}"><span>${esc(titulo)}</span>${chave}</div><div class="grade-disp">${ls.map(l => cartao(l, false)).join("")}</div>`;
+  };
+  $("#casa").innerHTML = comGrupo.map(g => secao(g.nome, membros(g), g.id)).join("")
+    + (soltas.length ? secao(comGrupo.length ? "Outras luzes" : "Luzes", soltas) : "")
     + (inters.length ? `<div class="sec">Interruptores</div><div class="grade-disp">${inters.map(i => cartao(i, true)).join("")}</div>` : "")
     || '<p class="suave">Nenhum aparelho cadastrado. Use a aba Ajustes para adicionar.</p>';
+  $$("[data-chave-grupo]").forEach(b => b.onclick = () => {
+    const ms = membros(grupos.find(g => g.id === b.dataset.chaveGrupo)), on = !ms.some(l => l.ligada && l.online);
+    ms.forEach(l => l.ligada = on); api("/api/ligar", { alvos: ms.map(l => l.id), on }); desenharAlvos(); desenharLista();
+  });
   $$("[data-disp]").forEach(b => b.onclick = () => {
     const l = todos.find(x => x.id === b.dataset.disp);
     l.ligada = !l.ligada; api("/api/ligar", { alvos: [l.id], on: l.ligada }); desenharAlvos(); desenharLista();
@@ -567,14 +644,25 @@ function desenharAlvos() {
   const ligadas = luzes.filter(l => l.ligada && l.online).length;
   $("#resumo").textContent = !luzes.length ? "nenhuma luz cadastrada" : `${ligadas} de ${luzes.length} ${luzes.length > 1 ? "luzes ligadas" : "luz ligada"}`
     + (inters.length ? ` · ${inters.filter(i => i.ligada && i.online).length}/${inters.length} interruptor${inters.length > 1 ? "es" : ""}` : "");
-  $("#alvos").innerHTML = (luzes.length > 1 ? `<button class="alvo ${todas ? "sel" : ""}" data-id=""><span class="ponto" style="--c:var(--cor-atual)">${IC.todas}</span><span class="txt"><b>Todas</b><small>${luzes.length} luzes</small></span></button>` : "") +
+  $("#alvos").innerHTML = (luzes.length > 1 ? `<button class="alvo ${todas ? "sel" : ""}" data-id=""><span class="ponto ${luzes.some(arco) && luzes.filter(l => l.ligada && l.online).every(arco) ? "arco" : ""}" style="--c:var(--cor-atual)">${IC.todas}</span><span class="txt"><b>Todas</b><small>${luzes.length} luzes</small></span></button>` : "") +
+    grupos.filter(g => membros(g).length).map(g => {
+      const ms = membros(g), acesas = ms.filter(l => l.ligada && l.online), ref = acesas[0];
+      const c = ref ? corCss(ref) : null, arcoG = acesas.length > 0 && acesas.every(arco);
+      return `<button class="alvo ${mesmaSel(ms.map(l => l.id)) ? "sel" : ""}" data-grupo="${g.id}"><span class="ponto ${acesas.length ? "" : "off"} ${arcoG ? "arco" : ""}" style="${c ? "--c:" + c : ""}">${IC.todas}</span><span class="txt"><b>${esc(g.nome)}</b><small>${acesas.length} de ${ms.length} ligadas</small></span></button>`;
+    }).join("") + (grupos.some(g => membros(g).length) ? '<div class="divisor">Cada luz</div>' : "") +
     luzes.map(l => {
       const c = corCss(l);
       const st = !l.online ? '<span class="alerta">sem resposta</span>' : !l.ligada ? "desligada" : l.modo === "scene" ? (NOMES_MODO[l.efeito] || "Efeito") : l.modo === "white" ? "branco · " + Math.round(l.v * 100) + "%" : Math.round(l.v * 100) + "%";
-      return `<button class="alvo ${sel.includes(l.id) || (todas && luzes.length === 1) ? "sel" : ""}" data-id="${l.id}"><span class="ponto ${l.ligada ? "" : "off"}" style="${c ? "--c:" + c : ""}">${IC.luz}</span><span class="txt"><b>${esc(l.nome)}</b><small>${st}</small></span></button>`;
+      return `<button class="alvo ${sel.includes(l.id) || (todas && luzes.length === 1) ? "sel" : ""}" data-id="${l.id}"><span class="ponto ${l.ligada ? "" : "off"} ${arco(l) ? "arco" : ""}" style="${c ? "--c:" + c : ""}">${IC.luz}</span><span class="txt"><b>${esc(l.nome)}</b><small>${st}</small></span></button>`;
     }).join("");
   desenharCasa();
   $$(".alvo").forEach(b => b.onclick = () => {
+    if (b.dataset.grupo) {
+      const ids = membros(grupos.find(g => g.id === b.dataset.grupo)).map(l => l.id);
+      sel = mesmaSel(ids) ? [] : ids;
+      if (sel.length === luzes.length) sel = [];
+      return desenharAlvos();
+    }
     const id = b.dataset.id;
     if (!id) sel = [];
     else if (sel.includes(id)) sel = sel.filter(x => x !== id);
@@ -583,6 +671,8 @@ function desenharAlvos() {
     desenharAlvos();
   });
   const foco = luzes.filter(l => !sel.length || sel.includes(l.id));
+  const acesas = foco.filter(l => l.ligada && l.online);
+  $("#brilho").classList.toggle("arco", acesas.length > 0 && acesas.every(arco));
   if (foco.length && document.activeElement !== $("#brilho")) {
     const v = Math.round(Math.max(...foco.map(l => l.v)) * 100);
     $("#brilho").value = v; $("#brilhoTxt").textContent = v + "%";
@@ -594,9 +684,10 @@ const api = (url, corpo) => fetch(url, { method: "POST", headers: { "Content-Typ
 
 function desenharLista() {
   if (tecladoAberto) return;
+  desenharGrupos();
   $("#lista").innerHTML = [...luzes, ...inters].map(l => {
     const c = corCss(l), inter = l.tipo === "interruptor";
-    return `<div class="luz"><div class="cab"><span class="ponto pi" style="${c ? "--c:" + c : ""}">${inter ? IC.inter : IC.luz}</span><div><b>${esc(l.nome)}</b>
+    return `<div class="luz"><div class="cab"><span class="ponto pi ${arco(l) ? "arco" : ""}" style="${c ? "--c:" + c : ""}">${inter ? IC.inter : IC.luz}</span><div><b>${esc(l.nome)}</b>
       <small>${inter ? "Interruptor · " : ""}${l.online ? (l.ligada ? (inter ? "ligado" : "ligada") : (inter ? "desligado" : "desligada")) : "sem resposta"}${l.cap.branco_real ? " · branco real" : ""}</small></div>
       <button class="remover" data-acao="remover" data-id="${l.id}">${IC.lixo}</button></div>
       <div class="acoes"><button class="${l.ligada ? "ligado" : ""}" data-acao="ligar" data-id="${l.id}">${IC.desligar}${l.ligada ? (inter ? "Ligado" : "Ligada") : (inter ? "Desligado" : "Desligada")}</button>
@@ -726,6 +817,85 @@ $("#horaSalvar").onclick = async () => {
   if (r.ok) { relogio(); setTimeout(() => $("#folhaHora").classList.remove("on"), 1200); }
 };
 
+// submenus da aba Ajustes
+function mostrarSub(id) {
+  $$("#subChave button").forEach(b => b.classList.toggle("on", b.dataset.sub === id));
+  $$("#aba-luzes .sub").forEach(s => s.classList.toggle("on", s.dataset.subaba === id));
+}
+$$("#subChave button").forEach(b => b.onclick = () => mostrarSub(b.dataset.sub));
+$("#btnWifi").innerHTML = `${IC.wifi}Conectar Wi-Fi`;
+
+// grupos (Ajustes): criar, editar membros, renomear e excluir
+let grupoEd = null;
+function desenharGrupos() {
+  $("#gruposLista").innerHTML = grupos.map(g => {
+    const ms = membros(g);
+    return `<div class="gcard"><div class="cab"><b>${esc(g.nome)}</b><button class="btn2" data-editar-grupo="${g.id}">${IC.editar}Editar</button></div>
+      <div class="membros-txt">${ms.length ? ms.map(l => `<span>${esc(l.nome)}</span>`).join("") : '<span>nenhuma luz</span>'}</div></div>`;
+  }).join("") || '<p class="suave">Nenhum grupo ainda. Toque em "+ Novo grupo".</p>';
+  $$("[data-editar-grupo]").forEach(b => b.onclick = () => abrirGrupo(grupos.find(g => g.id === b.dataset.editarGrupo)));
+}
+$("#btnNovoGrupo").onclick = () => abrirGrupo(null);
+function abrirGrupo(g) {
+  grupoEd = g ? { id: g.id, nome: g.nome, ids: membros(g).map(l => l.id) } : { id: null, nome: "", ids: [] };
+  $("#grupoTitulo").textContent = g ? "Editar grupo" : "Novo grupo";
+  $("#grupoExcluir").hidden = !g; $("#grupoMsg").textContent = "";
+  desenharGrupoEd(); $("#folhaGrupo").classList.add("on");
+}
+function desenharGrupoEd() {
+  $("#grupoNome").innerHTML = `${IC.editar} ${grupoEd.nome ? esc(grupoEd.nome) : '<span class="suave">Toque para dar um nome</span>'}`;
+  $("#grupoMembros").innerHTML = luzes.map(l => {
+    const outro = grupos.find(g => g.id !== grupoEd.id && g.ids.includes(l.id));
+    return `<button class="${grupoEd.ids.includes(l.id) ? "on" : ""}" data-membro="${l.id}">${esc(l.nome)}${outro ? `<small>hoje em ${esc(outro.nome)}</small>` : ""}</button>`;
+  }).join("");
+  $$("[data-membro]").forEach(b => b.onclick = () => {
+    const id = b.dataset.membro;
+    grupoEd.ids = grupoEd.ids.includes(id) ? grupoEd.ids.filter(x => x !== id) : [...grupoEd.ids, id];
+    desenharGrupoEd();
+  });
+}
+$("#grupoNome").onclick = () => abrirTeclado({ titulo: "Nome do grupo", valor: grupoEd.nome, max: 24, aoSalvar: v => { grupoEd.nome = v; desenharGrupoEd(); } });
+$("#grupoCancelar").onclick = () => $("#folhaGrupo").classList.remove("on");
+$("#grupoSalvar").onclick = async () => {
+  if (!grupoEd.nome) { $("#grupoMsg").textContent = "Dê um nome ao grupo."; return; }
+  if (!grupoEd.ids.length) { $("#grupoMsg").textContent = "Escolha pelo menos uma luz."; return; }
+  const r = await api("/api/grupos/salvar", { id: grupoEd.id, nome: grupoEd.nome, alvos: grupoEd.ids });
+  if (!r.ok) { $("#grupoMsg").textContent = r.msg || "Não consegui salvar."; return; }
+  $("#folhaGrupo").classList.remove("on"); atualizar();
+};
+$("#grupoExcluir").onclick = () => {
+  const g = grupoEd; $("#folhaGrupo").classList.remove("on");
+  confirmar(`Excluir o grupo "${g.nome}"?`, "As luzes continuam cadastradas, só deixam de estar juntas.", async () => { await api("/api/grupos/remover", { id: g.id }); atualizar(); }, "Excluir");
+};
+
+// reiniciar (Ajustes): escolher o que reiniciar e confirmar de novo antes de executar
+$("#btnReiniciar").innerHTML = `${IC.desligar}Reiniciar`;
+const REINICIAR = {
+  painel: { nome: "o painel", txt: "Fecha e abre de novo o programa e a tela. Leva uns 20 segundos. As luzes ficam como estão." },
+  raspberry: { nome: "o Raspberry", txt: "Desliga e liga o computador do painel. Leva de 1 a 2 minutos. Efeitos e sons param até voltar." },
+};
+function telaReiniciar(alvo) {
+  const c = $("#reiniciarCorpo");
+  if (!alvo) {
+    c.innerHTML = `<h2>Reiniciar</h2><p class="suave">Use se o painel travar ou parar de responder.</p>
+      <div class="opcoes-reiniciar">${Object.entries(REINICIAR).map(([k, r]) => `<button data-reiniciar="${k}"><b>Reiniciar ${r.nome}</b><span>${r.txt}</span></button>`).join("")}</div>
+      <div class="rodape"><button class="btn2" id="reiniciarFechar">Cancelar</button><span></span><span></span></div>`;
+    $$("[data-reiniciar]").forEach(b => b.onclick = () => telaReiniciar(b.dataset.reiniciar));
+  } else {
+    const r = REINICIAR[alvo];
+    c.innerHTML = `<h2>Reiniciar ${r.nome}?</h2><p class="destaque-txt">${r.txt}</p><p class="suave">Toque em "Sim, reiniciar" para confirmar.</p>
+      <div class="rodape"><button class="btn2" id="reiniciarFechar">Cancelar</button><span id="reiniciarMsg"></span><button class="btn2 perigo" id="reiniciarSim">Sim, reiniciar</button></div>`;
+    $("#reiniciarSim").onclick = async () => {
+      $("#reiniciarSim").disabled = $("#reiniciarFechar").disabled = true;
+      const res = await api("/api/reiniciar", { nome: alvo });
+      $("#reiniciarMsg").textContent = res.ok ? "Reiniciando... aguarde." : "Não consegui reiniciar.";
+      if (!res.ok) $("#reiniciarFechar").disabled = false;
+    };
+  }
+  $("#reiniciarFechar").onclick = () => $("#folhaReiniciar").classList.remove("on");
+}
+$("#btnReiniciar").onclick = () => { telaReiniciar(null); $("#folhaReiniciar").classList.add("on"); };
+
 $("#btnWifi").onclick = () => { $("#folhaWifi").classList.add("on"); lerRede(); listarRedes(); };
 $("#wifiAtualizar").onclick = listarRedes;
 $("#wifiFechar").onclick = () => $("#folhaWifi").classList.remove("on");
@@ -839,13 +1009,13 @@ function ligarBotoesPasso() {
   const q = $("#btnQr");
   if (q) q.onclick = () => { q.disabled = true; rede.cadastro = { etapa: "qr", msg: "Gerando o código..." }; desenharPasso(); api("/api/adicionar/iniciar").then(() => setTimeout(lerRede, 1500)); };
   const v = $("#btnVerLuzes");
-  if (v) v.onclick = () => { fecharAssist(); document.querySelector('nav button[data-aba="luzes"]').click(); };
+  if (v) v.onclick = () => { fecharAssist(); mostrarSub("aparelhos"); document.querySelector('nav button[data-aba="luzes"]').click(); };
   const c = $("#btnConta");
   if (c) c.onclick = () => abrirTeclado({ titulo: "Código de usuário da outra conta (Smart Life → Eu → engrenagem → Conta e segurança → Código de usuário)", valor: "", max: 20,
     aoSalvar: async v => { rede.cadastro = { etapa: "qr", msg: "Gerando o código..." }; desenharPasso(); await api("/api/adicionar/iniciar", { nome: v }); setTimeout(lerRede, 1500); } });
 }
 function fecharAssist() { $("#folhaAssist").classList.remove("on"); atualizar(); }
-$("#btnAdd").onclick = () => { passo = 0; tipo = null; aps = null; ultimoCorpo = ""; $("#folhaAssist").classList.add("on"); lerRede().then(desenharPasso); };
+$("#btnAdd").onclick = () => { passo = 0; tipo = null; aps = null; ultimoCorpo = ""; $("#folhaAssist").classList.add("on"); api("/api/adicionar/limpar").then(lerRede).then(desenharPasso); };
 $("#assVoltar").onclick = () => { if (passo > 0) { passo--; desenharPasso(); } };
 $("#assProx").onclick = () => {
   if (passo < passos().length - 1) { passo++; desenharPasso(); if (tipo === "magic" && passo === 2) procurarAps(); }
@@ -858,7 +1028,7 @@ lerRede(); setInterval(() => lerRede(), 2000);
 async function atualizar() {
   try {
     const r = await (await fetch("/api/estado")).json();
-    todos = r.luzes; luzes = todos.filter(l => l.tipo !== "interruptor"); inters = todos.filter(l => l.tipo === "interruptor");
+    grupos = r.grupos || []; todos = r.luzes; luzes = todos.filter(l => l.tipo !== "interruptor"); inters = todos.filter(l => l.tipo === "interruptor");
     sel = sel.filter(id => luzes.some(l => l.id === id));
     desenharAlvos(); desenharLista();
     const ref = luzes.find(l => l.ligada && (!sel.length || sel.includes(l.id)));
@@ -1136,7 +1306,7 @@ $("#btnTestarSom").onclick = async () => {
 };
 // nota musical nos cartoes que tem som
 Som.pronto.then(() => {
-  $(".som-sec").hidden = !Som.algum();  // instalacao sem sons (sem sons.json): Ajustes nao mostra a secao Som
+  $("#secSom").hidden = !Som.algum(); $('#subChave [data-sub="som"]').hidden = !Som.algum();  // instalacao sem sons (sem sons.json): Ajustes nao mostra a secao Som
   $$(".cena, .efeito").forEach(b => {
     const tipo = b.classList.contains("cena") ? "cena" : "efeito";
     if (Som.tem(tipo, b.dataset.id)) b.insertAdjacentHTML("beforeend", IC.nota.replace('class="i"', 'class="i nota-som"'));

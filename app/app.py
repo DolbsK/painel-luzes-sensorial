@@ -84,7 +84,28 @@ class Luz:
         except Exception:
             pass
 
+    def _drenar(self):
+        """Descarta respostas acumuladas dos envios sem espera (nowait). Sem isso a fila enche em ~3 min
+        de efeito, a luz nao consegue mais responder e para de aceitar comando."""
+        s = getattr(self._dev, "socket", None)
+        if s is None:
+            return
+        # settimeout(0) e nao MSG_DONTWAIT: com tempo-limite no socket o Python espera o tempo-limite inteiro (2 s) mesmo com MSG_DONTWAIT
+        antes = s.gettimeout()
+        try:
+            s.settimeout(0)
+            while s.recv(65536):
+                pass
+        except OSError:
+            pass  # fila vazia (BlockingIOError) ou conexao caida (o proximo envio reconecta)
+        finally:
+            try:
+                s.settimeout(antes)
+            except OSError:
+                pass
+
     def _enviar(self, dps, nowait=False):
+        self._drenar()
         for _ in range(2):
             try:
                 r = self.dev().set_multiple_values(dps, nowait=nowait)
@@ -340,6 +361,20 @@ threading.Thread(target=vigia, daemon=True).start()
 estado_geral = {"cena": None}
 
 app = FastAPI()
+uso = {"ultimo": time.time()}  # ultimo comando na tela (a atualizacao automatica espera o painel ficar sem uso)
+
+
+@app.middleware("http")
+async def marcar_uso(request, call_next):
+    if request.method == "POST":
+        uso["ultimo"] = time.time()
+    return await call_next(request)
+
+
+@app.get("/api/ocioso")
+def api_ocioso():
+    return {"ocioso_s": int(time.time() - uso["ultimo"]),
+            "efeito": any(l.ligada and l.modo == "scene" and l.efeito for l in luzes)}
 app.mount("/static", StaticFiles(directory=BASE / "static"), name="static")
 
 
@@ -355,7 +390,9 @@ def index():
 
 @app.get("/api/estado")
 def api_estado():
-    return {"cena": estado_geral["cena"], "brilho_max": BRILHO_MAX, "luzes": [l.estado() for l in luzes]}
+    return {"cena": estado_geral["cena"], "brilho_max": BRILHO_MAX, "luzes": [l.estado() for l in luzes],
+            "grupos": config.get("grupos", [])}
+
 
 
 class Pedido(BaseModel):
@@ -434,6 +471,33 @@ def api_ligar(p: Pedido):
 def api_identificar(p: Pedido):
     for l in alvos([p.id]):
         l.identificar(p.on is not False)
+    return {"ok": True}
+
+
+@app.post("/api/grupos/salvar")
+def api_grupo_salvar(p: Pedido):
+    """Cria (sem id) ou altera um grupo. Cada luz fica em um grupo so: entrar num grupo tira a luz dos outros."""
+    nome = (p.nome or "").strip()[:24]
+    if not nome:
+        return {"ok": False, "msg": "Dê um nome ao grupo."}
+    grupos = config.setdefault("grupos", [])
+    ids = list(dict.fromkeys(p.alvos or []))
+    g = next((x for x in grupos if x["id"] == p.id), None)
+    if g is None:
+        g = {"id": "g%d" % int(time.time() * 1000)}
+        grupos.append(g)
+    g.update(nome=nome, ids=ids)
+    for outro in grupos:
+        if outro is not g:
+            outro["ids"] = [i for i in outro["ids"] if i not in ids]
+    salvar_config(config)
+    return {"ok": True, "id": g["id"]}
+
+
+@app.post("/api/grupos/remover")
+def api_grupo_remover(p: Pedido):
+    config["grupos"] = [g for g in config.get("grupos", []) if g["id"] != p.id]
+    salvar_config(config)
     return {"ok": True}
 
 
@@ -572,6 +636,20 @@ class Hora(BaseModel):
     quando: str  # "AAAA-MM-DD HH:MM" no horario local
 
 
+@app.post("/api/reiniciar")
+def api_reiniciar(p: Pedido):
+    """Botao em Ajustes (com dupla confirmacao na tela): na sala nao da para alcancar a tomada nem o cabo do Pi.
+    Roda solto, com 1 s de folga, para a resposta chegar na tela antes de o servidor cair."""
+    if p.nome == "painel":
+        cmd = "sleep 1; pkill -x chromium; sudo -n /usr/bin/systemctl restart luzes"
+    elif p.nome == "raspberry":
+        cmd = "sleep 1; sudo -n /usr/bin/systemctl reboot"
+    else:
+        return {"ok": False}
+    subprocess.Popen(["sh", "-c", cmd], start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return {"ok": True}
+
+
 @app.post("/api/hora")
 def api_hora(p: Hora):
     """Acerta o relogio na mao (sala sem internet depois de faltar energia). Com internet, o NTP acerta sozinho."""
@@ -649,6 +727,17 @@ def api_adicionar(p: Pedido):
         config["user_code"] = p.nome.strip()
         salvar_config(config)
     rede.iniciar_cadastro(codigo_smartlife(), _apos_cadastro)
+    return {"ok": True}
+
+
+@app.post("/api/adicionar/limpar")
+def api_adicionar_limpar():
+    # assistente aberto de novo: esquece o "Pronto!" ou erro do cadastro anterior (nao mexe em cadastro em andamento)
+    for st in (rede.cadastro, magic.status):
+        if st["etapa"] in ("pronto", "erro"):
+            st.update(etapa="parado", msg="", nomes=[])
+            if "novas" in st:
+                st["novas"] = []
     return {"ok": True}
 
 

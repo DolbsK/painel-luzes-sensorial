@@ -1,0 +1,8 @@
+[Unit]
+Description=Atualiza o painel de luzes pelo GitHub (com internet e sem uso)
+After=network-online.target luzes.service
+
+[Service]
+Type=oneshot
+Environment=USUARIO=__USUARIO__ PASTA=__PASTA__
+ExecStart=/usr/local/sbin/luzes-atualizar

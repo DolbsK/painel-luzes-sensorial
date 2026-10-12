@@ -43,6 +43,18 @@ curl -fsSL https://raw.githubusercontent.com/DolbsK/painel-luzes-sensorial/main/
 ```
 Refazer as perguntas (nome da sala, Wi-Fi...): o mesmo comando com `--reconfigurar` no lugar de `--atualizar`.
 
+### Atualização automática
+O painel procura versão nova no ramo `main` toda noite à 1h (timer `luzes-atualizar`). Ele só atualiza quando:
+- tem internet;
+- a tela ficou 30 minutos sem toque;
+- nenhum efeito ou cena viva está rodando (das 0h às 5h esta regra não vale, então à 1h basta a tela parada).
+
+Se o painel estiver desligado ou sem internet à 1h, a atualização fica para a noite seguinte.
+
+Antes de atualizar, guarda o código atual em `~/luzes.anterior`. Se o painel não voltar em 2 minutos, ele volta para essa versão e não tenta de novo a mesma versão. O registro fica em `/var/log/luzes-atualizar.log`.
+
+Para pausar (por exemplo, testando código direto no Pi), crie o arquivo `~/luzes/.sem-atualizacao-auto`. Para ver o que faria sem mudar nada: `sudo SIMULAR=1 USUARIO=$USER PASTA=$HOME/luzes /usr/local/sbin/luzes-atualizar`.
+
 ## Som
 O som toca no navegador da tela (Web Audio), não no servidor. Cada cena ou efeito aponta para um som em `app/static/sons/sons.json`; trocar ou acrescentar som é só mexer nesse arquivo e nos áudios, sem mexer no código.
 - **Os áudios não vão para este repositório** (a licença de muitos bancos de som proíbe distribuir o arquivo sozinho). Ponha os `.ogg` em `app/static/sons/` do seu painel. Sem eles o painel funciona normal, só sem som. `app/static/sons/CREDITOS.md` registra de onde veio cada faixa na instalação original.

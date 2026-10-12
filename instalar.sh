@@ -69,7 +69,7 @@ fi
 if [ "$MODO" != atualizar ]; then
   passo "Instalando pacotes do sistema"
   apt-get update -qq
-  apt-get install -y -qq python3-venv network-manager iw curl rsync labwc kanshi libinput-tools
+  apt-get install -y -qq python3-venv network-manager iw curl rsync git labwc kanshi libinput-tools
   apt-get install -y -qq chromium 2>/dev/null || apt-get install -y -qq chromium-browser
 fi
 
@@ -106,6 +106,23 @@ sed -e "s|__USUARIO__|$USUARIO|g" -e "s|__PASTA__|$PASTA|g" "$ORIGEM/sistema/luz
 systemctl daemon-reload
 systemctl enable -q luzes
 systemctl restart luzes
+
+# botao "Reiniciar" em Ajustes: so reiniciar o painel e o Raspberry, sem senha (vale tambem no --atualizar)
+echo "$USUARIO ALL=(root) NOPASSWD: /usr/bin/systemctl restart luzes, /usr/bin/systemctl reboot" >/tmp/luzes-reiniciar
+visudo -cqf /tmp/luzes-reiniciar && install -m 440 /tmp/luzes-reiniciar /etc/sudoers.d/luzes-reiniciar; rm -f /tmp/luzes-reiniciar
+
+# atualizacao automatica pelo GitHub (vale tambem no --atualizar, para paineis ja instalados receberem)
+passo "Atualização automática pelo GitHub (toda noite à 1h, com internet e sem uso)"
+command -v git >/dev/null || apt-get install -y -qq git || aviso "git não instalado: a atualização automática só funciona com git."
+install -m 755 "$ORIGEM/sistema/atualizar-auto.sh" /usr/local/sbin/luzes-atualizar
+sed -e "s|__USUARIO__|$USUARIO|g" -e "s|__PASTA__|$PASTA|g" "$ORIGEM/sistema/luzes-atualizar.service" >/etc/systemd/system/luzes-atualizar.service
+install -m 644 "$ORIGEM/sistema/luzes-atualizar.timer" /etc/systemd/system/luzes-atualizar.timer
+systemctl daemon-reload
+systemctl enable -q --now luzes-atualizar.timer
+# versao instalada: so quando o codigo veio do GitHub (pasta git); copia avulsa deixa a marca anterior
+if git -C "$ORIGEM" rev-parse HEAD >/dev/null 2>&1; then
+  git -C "$ORIGEM" rev-parse HEAD >"$PASTA/.versao"; chown "$USUARIO:$USUARIO" "$PASTA/.versao"
+fi
 
 if [ "$MODO" = atualizar ]; then
   pkill -x chromium 2>/dev/null || pkill -f chromium-browser 2>/dev/null || true

@@ -1,0 +1,9 @@
+[Unit]
+Description=Procura atualização do painel de luzes toda noite, à 1h
+
+[Timer]
+OnCalendar=*-*-* 01:00
+RandomizedDelaySec=10min
+
+[Install]
+WantedBy=timers.target
