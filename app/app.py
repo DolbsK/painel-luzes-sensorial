@@ -12,7 +12,7 @@ from pydantic import BaseModel
 import magic
 import rede
 from ajustes import AJ, publico
-from efeitos import (BRILHO_MAX, CENAS, EFEITOS, LOCALIZAR_S, ONDA, QUADRO_S, branco_rgb, definir_reacao, esperar_quadro,
+from efeitos import (BRILHO_MAX, CENAS, EFEITOS, LOCALIZAR_S, ONDA, QUADRO_S, branco_rgb, definir_reacao, esperar_quadro, precisa_enviar,
                      quadro_efeito, reacao, reagir, zerar_reacao)
 
 BASE = Path(__file__).parent
@@ -168,6 +168,7 @@ class Luz:
         return False
 
     def _status(self):
+        self._drenar()
         try:
             return self.dev().status().get("dps", {})
         except Exception:
@@ -296,17 +297,21 @@ class Luz:
         def run():
             with self.lock:
                 self._enviar({self._dp("liga"): True, self._dp("modo"): "colour"})
-            tentou = 0
+            tentou, ultimo, ult_t, confirmar = 0, None, 0.0, True
             while g == self.geracao:
                 n0, agora = reacao["n"], time.time()
                 if self.online or agora - tentou > 5:  # luz fora do ar: tenta de novo a cada 5 s
                     tentou = agora
                     h, s, v = quadro_efeito(e, vel, self.alvo_h, self.alvo_s, self.alvo_v, agora)
                     h, s, v = reagir(nome, h, s, v, agora)  # luz acompanhando o som (so se a tela avisou)
-                    with self.lock:
-                        if g == self.geracao:
-                            self._enviar({self._dp("cor"): self._cor(h, s, v)}, nowait=True)
-                            self.h, self.s, self.v = h, s, v
+                    if precisa_enviar(ultimo, ult_t, h, s, v, agora):
+                        with self.lock:
+                            if g == self.geracao:
+                                # primeira cor da cena nova espera a luz confirmar: a troca de cena nao se perde
+                                if self._enviar({self._dp("cor"): self._cor(h, s, v)}, nowait=not confirmar):
+                                    confirmar = False
+                                self.h, self.s, self.v = h, s, v
+                                ultimo, ult_t = (h, s, v), agora
                 esperar_quadro(n0, time.time())
         threading.Thread(target=run, daemon=True).start()
 
@@ -394,15 +399,26 @@ def eh_duas_zonas(cfg):
 class ZonaDupla(Luz):
     MAPAS = {"branco": {"liga": "63", "modo": "21", "brilho": "22", "temp": "23"},
              "borda": {"liga": "54", "modo": "55", "cor": "24"}}
+    pares = {}  # id do aparelho -> conexao e trava divididas pelas duas zonas
 
     def __init__(self, cfg, nome, zona):
+        self._par = ZonaDupla.pares.setdefault(cfg["id"], {"dev": None, "lock": threading.Lock()})
         super().__init__(cfg, nome)
+        self.lock = self._par["lock"]
         self.zona = zona
         self.id = f'{cfg["id"]}~{zona}'
         self.tipo = "B"
         self.tem_branco = zona == "branco"
         self.tem_cor = self.tem_efeito = zona == "borda"
         self.modo = "white" if zona == "branco" else "colour"
+
+    @property
+    def _dev(self):
+        return self._par["dev"]
+
+    @_dev.setter
+    def _dev(self, valor):
+        self._par["dev"] = valor
 
     def _dp(self, nome):
         return self.MAPAS[self.zona].get(nome)
@@ -442,6 +458,7 @@ def carregar():
     nomes = config.setdefault("nomes", {})
     removidos = set(config.get("removidos", []))
     luzes = []
+    ZonaDupla.pares.clear()  # conexao nova a cada carga (IP pode ter mudado)
     for d in dados:
         if d["id"] in removidos:
             continue
@@ -529,7 +546,14 @@ def api_cena(p: Pedido):
         return {"ok": False}
     zerar_reacao()
     for l in alvos(p.alvos):
-        if "passos" in c:
+        if "branco" in c:
+            if l.tem_branco or l.tem_cor:
+                threading.Thread(target=l.branco, args=(c["branco"],), daemon=True).start()
+        elif not l.tem_cor:
+            # luz que so faz branco (parte branca dos paineis duplos): apaga, para nao lavar as cores da cena
+            if l.tem_branco and l.ligada:
+                threading.Thread(target=l.ligar, args=(False,), daemon=True).start()
+        elif "passos" in c:
             threading.Thread(target=l.aplicar_efeito, args=("cena_" + p.nome, 1), daemon=True).start()
         else:
             l.transicao(c["h"], c["s"])

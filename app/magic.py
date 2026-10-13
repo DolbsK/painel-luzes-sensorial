@@ -4,7 +4,8 @@ from pathlib import Path
 from flux_led import WifiLedBulb
 from flux_led.scanner import BulbScanner
 from ajustes import AJ
-from efeitos import BRILHO_MAX, EFEITOS, LOCALIZAR_S, ONDA, QUADRO_S, branco_rgb, esperar_quadro, quadro_efeito, reacao, reagir
+from efeitos import (BRILHO_MAX, EFEITOS, LOCALIZAR_S, ONDA, QUADRO_S, branco_rgb, esperar_quadro, precisa_enviar, quadro_efeito,
+                     reacao, reagir)
 
 BASE = Path(__file__).parent
 ARQ = BASE / "magic.json"
@@ -167,16 +168,18 @@ class LuzMagic:
             # cores enviadas pelo painel no ritmo do relogio do Pi (sincroniza com as outras luzes)
             with self.lock:
                 self._faz(lambda b: b.turnOn())
-            tentou = 0
+            tentou, ultimo, ult_t = 0, None, 0.0
             while g == self.geracao:
                 n0, agora = reacao["n"], time.time()
                 if self.online or agora - tentou > 5:  # fora do ar: tenta de novo a cada 5 s
                     tentou = agora
                     h, s, v = quadro_efeito(e, vel, self.alvo_h, self.alvo_s, self.alvo_v, agora)
                     h, s, v = reagir(nome, h, s, v, agora)  # luz acompanhando o som (so se a tela avisou)
-                    with self.lock:
-                        if g == self.geracao:
-                            self._faz(lambda b: b.setRgb(*self._rgb(h, s, v), persist=False, retry=1))
+                    if precisa_enviar(ultimo, ult_t, h, s, v, agora):
+                        with self.lock:
+                            if g == self.geracao:
+                                self._faz(lambda b: b.setRgb(*self._rgb(h, s, v), persist=False, retry=1))
+                                ultimo, ult_t = (h, s, v), agora
                 esperar_quadro(n0, time.time())
         threading.Thread(target=run, daemon=True).start()
 

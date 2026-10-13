@@ -2,6 +2,7 @@
 # Precisa de ffmpeg e numpy. Roda no notebook, sobre o .ogg final (nao sobre o original).
 #   python ferramentas/marcas.py pulsos app/static/sons/fogueira.ogg --k 4
 #   python ferramentas/marcas.py nivel app/static/sons/mar.ogg
+#   trovoes (grave e longo): python ferramentas/marcas.py pulsos app/static/sons/tempestade.ogg --filtro lowpass=f=250 --passo 0.05 --mediana 10 --intervalo 5 --k 3
 # Grava ao lado do audio: <nome>.marcas.json
 import argparse, json, subprocess
 from pathlib import Path
@@ -32,11 +33,11 @@ def mediana_movel(e, largura):
     return np.array([np.median(pad[i:i + largura]) for i in range(len(e))])
 
 
-def pulsos(arq, k, piso):
-    x = decodificar(arq, "highpass=f=2000")
-    passo = 0.01
+def pulsos(arq, k, piso, filtro="highpass=f=2000", passo=0.01, mediana_s=1.0, intervalo=INTERVALO_MIN):
+    intervalo = max(intervalo, INTERVALO_MIN)  # nunca mais de 2 pulsos por segundo
+    x = decodificar(arq, filtro)
     e = energia(x, passo)
-    med = mediana_movel(e, int(1 / passo) | 1)
+    med = mediana_movel(e, int(mediana_s / passo) | 1)
     acima = (e > k * med) & (e > piso)
     # so o pico de cada estalo
     picos = []
@@ -54,7 +55,7 @@ def pulsos(arq, k, piso):
     # descarta estalo a menos de 0,5 s do anterior (fica o mais forte do grupo)
     ok = []
     for t, f in picos:
-        if ok and t - ok[-1][0] < INTERVALO_MIN:
+        if ok and t - ok[-1][0] < intervalo:
             if f > ok[-1][1]:
                 ok[-1] = (t, f)
             continue
@@ -87,12 +88,16 @@ if __name__ == "__main__":
     ap.add_argument("arquivo")
     ap.add_argument("--k", type=float, default=4.0, help="estalo = energia k vezes a mediana de 1 s")
     ap.add_argument("--piso", type=float, default=0.004, help="energia minima absoluta de um estalo")
+    ap.add_argument("--filtro", default="highpass=f=2000", help="filtro do ffmpeg antes de medir (estalo: agudo; trovao: lowpass=f=250)")
+    ap.add_argument("--passo", type=float, default=0.01, help="janela de energia em s")
+    ap.add_argument("--mediana", type=float, default=1.0, help="largura da mediana movel em s")
+    ap.add_argument("--intervalo", type=float, default=INTERVALO_MIN, help="s minimos entre pulsos (nunca menos de 0,5)")
     ap.add_argument("--saida")
     a = ap.parse_args()
     arq = Path(a.arquivo)
     saida = Path(a.saida) if a.saida else arq.with_suffix(".marcas.json")
     if a.modo == "pulsos":
-        lista, dur, st = pulsos(arq, a.k, a.piso)
+        lista, dur, st = pulsos(arq, a.k, a.piso, a.filtro, a.passo, a.mediana, a.intervalo)
         print(json.dumps(st))
         dados = {"pulsos": lista, "duracao": round(dur, 2)}
     else:

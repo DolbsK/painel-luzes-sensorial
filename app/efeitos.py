@@ -10,26 +10,22 @@ QUADRO_S = 0.2  # intervalo entre cores enviadas a cada luz durante efeito ou ce
 # Cenas vivas: passeiam bem devagar entre tons vizinhos (passo_s = segundos de um tom ao proximo).
 # passos: (cor em graus, saturacao 0-1, fator do brilho da barra). Cena com h/s fica parada (Foco).
 CENAS = {
-    "calma":     {"passos": [(205, .60, 1), (218, .55, .85), (195, .62, .95)], "passo_s": 12},
-    "relaxar":   {"passos": [(268, .50, 1), (285, .45, .85), (252, .50, .9)], "passo_s": 12},
-    "natureza":  {"passos": [(125, .60, 1), (150, .55, .85), (95, .55, .9), (140, .60, .8)], "passo_s": 10},
-    "aconchego": {"passos": [(30, .85, 1), (22, .90, .8), (36, .80, .9)], "passo_s": 9},
-    "foco":      {"h": 195, "s": 0.15},
+    "foco":      {"branco": 0.7},  # luz branca neutra e parada: acende tambem as luzes so de branco
+    "natureza":  {"passos": [(125, .95, 1), (95, .92, 1), (150, .90, .9), (80, .88, 1)], "passo_s": 10},  # verdes vivos + limao (sol nas folhas)
+    "chuva":     {"passos": [(205, .80, .85), (218, .85, .6), (198, .75, .8), (228, .80, .55)], "passo_s": 12},  # azul de chuva, sobe e desce devagar
+    "tempestade": {"passos": [(235, .85, .45), (250, .80, .30), (225, .90, .40), (262, .75, .35)], "passo_s": 8,
+                   "relampago": True},  # azul e violeta escuros; clareia nos trovoes do som
+    "fogueira":  {"passos": [(28, .95, 1), (18, 1, .55), (35, .9, .85), (22, 1, .4), (30, .95, .9), (15, 1, .65)], "passo_s": 2.5},  # pisca nos estalos do som
     "noite":     {"passos": [(232, .85, .45), (250, .80, .35), (222, .85, .4)], "passo_s": 14},
-    "brincar":   {"passos": [(320, .70, 1), (45, .80, 1), (180, .70, 1), (20, .85, 1), (270, .60, 1)], "passo_s": 3},
 }
 
 # Efeitos tocados pelo painel (nao pelo efeito interno da luz): a cor de cada instante sai do relogio do
 # computador, entao todas as luzes no mesmo efeito e velocidade ficam sincronizadas. Troca sempre suave.
+# Os tres efeitos de controle remoto de fita LED. Sem pisca-pisca (strobe): risco para quem tem epilepsia.
 EFEITOS = {
-    "arcoiris": {"passos": [(0, .75, 1), (40, .8, 1), (60, .75, 1), (120, .7, 1), (190, .75, 1), (240, .75, 1), (285, .7, 1)]},
-    "mar":      {"passos": [(200, .85, 1), (225, .9, .55), (185, .8, .85), (240, .85, .45), (195, .7, .95)]},
-    "aurora":   {"passos": [(140, .7, .9), (165, .75, .6), (280, .6, .85), (190, .7, .5), (120, .65, .8)]},
-    "lava":     {"passos": [(10, .95, 1), (340, .9, .7), (28, .95, .9), (320, .85, .6)]},
-    "fogueira": {"passos": [(28, .95, 1), (18, 1, .55), (35, .9, .85), (22, 1, .4), (30, .95, .9), (15, 1, .65)]},
-    "algodao":  {"passos": [(330, .45, 1), (280, .4, .9), (200, .4, 1), (300, .35, .95)]},
-    "estrelas": {"passos": [(235, .85, .35), (255, .8, .6), (225, .9, .25), (270, .7, .75), (240, .85, .3)]},
-    "respirar": {"respirar": True},
+    "arcoiris": {"passos": [(0, 1, 1), (40, 1, 1), (60, 1, 1), (120, 1, 1), (190, 1, 1), (240, 1, 1), (285, 1, 1)]},  # suave
+    "salto":    {"passos": [(0, 1, 1), (120, 1, 1), (240, 1, 1), (55, 1, 1), (180, 1, 1), (300, 1, 1)], "salto": True},
+    "respirar": {"respirar": True},  # fade da cor atual
 }
 EFEITOS.update({"cena_" + n: c for n, c in CENAS.items() if "passos" in c})  # cenas vivas usam o mesmo motor
 
@@ -39,11 +35,23 @@ def quadro_efeito(e, vel, h0, s0, v, t):
     passos = [(h0, max(s0, .5), 1), (h0, max(s0, .5), .12)] if e.get("respirar") else e["passos"]
     pos = (t / (e.get("passo_s") or PASSO_S.get(vel, 6.0))) % len(passos)
     i = int(pos)
-    k = pos - i
+    k = 0.0 if e.get("salto") else pos - i  # salto: troca de uma vez, sem passar pelas cores do meio
     k = k * k * (3 - 2 * k)
     (ha, sa, ma), (hb, sb, mb) = passos[i], passos[(i + 1) % len(passos)]
     dh = ((hb - ha + 180) % 360) - 180
     return (ha + dh * k) % 360, sa + (sb - sa) * k, max(0.03, v * (ma + (mb - ma) * k))
+
+
+REFORCO_S = 1.5  # sem mudanca de cor, reenvia a cada 1,5 s (corrige quadro que a luz descartou)
+
+
+def precisa_enviar(ultimo, ult_t, h, s, v, agora):
+    """Efeito/cena so manda cor quando ela muda de verdade ou a cada REFORCO_S.
+    Mandar 5 cores por segundo a todas as luzes, mesmo iguais, entupia a rede e as luzes descartavam a cor nova."""
+    if ultimo is None or agora - ult_t >= REFORCO_S:
+        return True
+    hu, su, vu = ultimo
+    return abs(((h - hu + 180) % 360) - 180) >= 1.5 or abs(s - su) >= 0.015 or abs(v - vu) >= 0.015
 
 
 def branco_rgb(t):
@@ -108,6 +116,9 @@ def reagir(nome, h, s, v, agora):
     d = agora - reacao["pulso_t"]
     if 0 <= d < PULSO_S:
         k = reacao["forca"] * (1 - d / PULSO_S) ** 2
+        if EFEITOS.get(nome, {}).get("relampago"):
+            # relampago: clareia para quase branco, ate 2,5x o brilho do passo (sempre proporcional a barra de brilho)
+            return h % 360, max(0.0, s - 0.85 * k), max(0.03, min(base * (1 + 1.5 * k * peso), BRILHO_MAX))
         h = h + max(-12, min(12, ((40 - h + 180) % 360) - 180)) * k  # puxa ate 12 graus para o amarelo
         s = max(0.0, s - 0.15 * k)
     elif reacao["nivel"] is not None:

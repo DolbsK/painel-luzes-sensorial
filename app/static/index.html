@@ -124,6 +124,7 @@ nav button.on { background: #eef1fb; color: #15193a; }
 
 .grade { flex: 1; display: grid; gap: 11px; min-height: 0; }
 .g4 { grid-template-columns: repeat(4, 1fr); grid-auto-rows: 1fr; }
+.g3 { grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr; }
 /* O degrade dos cartoes anda por transform numa camada propria (so o compositor da GPU trabalha). Animar background-position
    repintava os 8 cartoes a cada quadro e ocupava 160% de um nucleo do Pi, o que travava os avisos de luz do som.
    Em passos (steps) o degrade anda a 5 ou 10 quadros por segundo: o movimento e lento demais para se notar o passo, e a CPU cai mais. */
@@ -344,7 +345,7 @@ nav button.on { background: #eef1fb; color: #15193a; }
   <section class="aba" id="aba-efeitos">
     <div class="barra"><span class="rot">Velocidade</span>
       <div class="chave" id="velChave"><button data-v="1" class="on">Lenta</button><button data-v="2">Média</button><button data-v="3">Rápida</button></div></div>
-    <div class="grade g4" id="efeitos"></div>
+    <div class="grade g3" id="efeitos"></div>
   </section>
 
   <section class="aba" id="aba-luzes">
@@ -495,6 +496,7 @@ const IC = {
   casa: P('<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>'),
   sol: P('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
   nuvem: P('<path d="M17.5 19H8a5 5 0 1 1 .9-9.9A6 6 0 0 1 20 12.5 3.5 3.5 0 0 1 17.5 19z"/>'),
+  fogueira: P('<path d="M12 3c1 3 4 4.5 4 8.5a4 4 0 0 1-8 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 0-7.5z"/><path d="M5 21h14M7 18l10 3M17 18L7 21"/>'),
   chuva: P('<path d="M17.5 15H8a5 5 0 1 1 .9-9.9A6 6 0 0 1 20 8.5 3.5 3.5 0 0 1 17.5 15z"/><path d="M8 18l-1 3M12 18l-1 3M16 18l-1 3"/>'),
   raio: P('<path d="M17.5 14H8a5 5 0 1 1 .9-9.9A6 6 0 0 1 20 7.5 3.5 3.5 0 0 1 17.5 14z"/><path d="M12 14l-2 4h4l-2 4"/>'),
   lua: P('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>'),
@@ -503,16 +505,13 @@ const IC = {
   editar: P('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'),
 };
 // [id, nome, cor de destaque, paleta do cartao (a mesma que a cena passeia nas luzes)]
-const CENAS = [["calma","Calma","hsl(210 70% 58%)","#3f7fd0,#2f5fae,#4fa0d0,#3f7fd0"],["relaxar","Relaxar","hsl(268 55% 62%)","#7a5cc8,#9a6cc8,#5e4fb0,#7a5cc8"],
-  ["natureza","Natureza","hsl(130 45% 50%)","#3f9a5a,#2f8a7a,#7aa84a,#3f9a5a"],["aconchego","Aconchego","hsl(30 85% 58%)","#d9893a,#b8622a,#e0a050,#d9893a"],
-  ["foco","Foco","hsl(190 45% 72%)","#8fb4c8,#a8c4d4,#7a9cb4,#8fb4c8"],["noite","Noite","hsl(232 60% 45%)","#26338a,#2a1f6a,#1a2a7a,#26338a"],
-  ["brincar","Brincar","hsl(320 65% 62%)","#d0508a,#e0b040,#40c0c0,#e07a40,#9a6ad0,#d0508a"],["desligar","Desligar","#5b6177","#3a3f52,#2c3042,#3a3f52"]];
+const CENAS = [["foco","Foco","hsl(200 35% 82%)","#cfe0ea,#9fb8c8,#e8f0f4,#cfe0ea"],["natureza","Floresta","hsl(125 70% 45%)","#2fb84a,#7ac02a,#1f9a6a,#2fb84a"],
+  ["chuva","Chuva","hsl(212 60% 50%)","#3a6aa8,#24466e,#4a7ab0,#3a6aa8"],["tempestade","Tempestade","hsl(248 50% 42%)","#2a2a6a,#5a4aa0,#14143c,#2a2a6a"],["fogueira","Fogueira","hsl(26 95% 55%)","#ff8a1a,#b8400a,#ffb040,#ff8a1a"],
+  ["noite","Noite","hsl(232 60% 45%)","#26338a,#2a1f6a,#1a2a7a,#26338a"],["desligar","Desligar","#5b6177","#3a3f52,#2c3042,#3a3f52"]];
 const PRESETS = [["Vela", 0, "#ff9a3d"], ["Quente", 0.3, "#ffc98a"], ["Neutro", 0.6, "#fff3e2"], ["Dia", 1, "#dbe8ff"]];
 const CORES = [0, 15, 30, 45, 60, 90, 120, 150, 170, 190, 210, 230, 250, 270, 290, 310, 330, 345];
-const EFEITOS = [["arcoiris","Arco-íris","#f25c5c,#f2a84c,#f2dc4c,#58d68d,#4cc3e0,#5d7de2,#a569bd,#f25c5c"],
-  ["mar","Fundo do mar","#0f6fa8,#0b2f7a,#1aa3b8,#16205e,#2a8fd0"],["aurora","Aurora","#2fd88a,#137a6a,#9a5ce0,#11506e,#3fcf6a"],
-  ["lava","Lava","#ff4a1c,#b3125e,#ff8a1a,#8a1a6e"],["fogueira","Fogueira","#ff9a2e,#9e3a08,#ffb347,#6e2a06,#ff8c1a"],
-  ["algodao","Algodão-doce","#f7a8d0,#c9a8f0,#a8d4f5,#e8b0f0"],["estrelas","Noite estrelada","#121a52,#3a2f8f,#0b1240,#6a4fc0,#141c5c"],
+const EFEITOS = [["arcoiris","Arco-íris","#ff3b3b,#ff9f1a,#ffe31a,#2ee860,#1ad0f0,#3b5bff,#b03bff,#ff3b3b"],
+  ["salto","Troca de cores","#ff2d2d 0 11%,#22dd44 11% 22%,#2d5bff 22% 33%,#ffd21a 33% 44%,#1ad8e0 44% 55%,#e02de0 55% 66%,#ff2d2d 66% 77%,#22dd44 77% 88%,#2d5bff 88% 100%"],
   ["respirar","Respirar","#3a3f8f,#8e95e8,#3a3f8f,#8e95e8"]];
 const ABAS = [["inicio","Início","casa"],["cenas","Cenas","brincar"],["branco","Branco","branco"],["cores","Cores","cores"],["efeitos","Efeitos","efeitos"],["luzes","Ajustes","ajustes"]];
 
@@ -542,6 +541,7 @@ $$("#abas button").forEach(b => b.onclick = () => {
 });
 
 // cenas
+IC.tempestade = IC.raio;
 $("#cenas").innerHTML = CENAS.map(([id, n, c, g]) => `<button class="cena" data-id="${id}" style="--c:${c};--g:${g}">${IC[id]}<span>${n}</span></button>`).join("");
 $$(".cena").forEach(b => b.onclick = () => {
   const id = b.dataset.id;
