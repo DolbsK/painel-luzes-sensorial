@@ -1,5 +1,5 @@
 # Painel de luzes da sala sensorial: controla luzes Tuya e Magic Home pela rede local (sem nuvem)
-import colorsys, json, subprocess, threading, time, urllib.request
+import colorsys, json, socket, subprocess, threading, time, urllib.request
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -19,6 +19,27 @@ BASE = Path(__file__).parent
 CONFIG = BASE / "config.json"  # o que muda pela tela: nomes, removidos, cidade do clima, conta Smart Life
 FALHAS_OFFLINE = 3  # leituras seguidas falhando (a cada 20 s) ate mostrar "sem resposta"
 _trava_config = threading.Lock()
+_trava_devices = threading.Lock()
+
+
+def vizinhos():
+    """IPs vistos ha pouco na rede (tabela ARP do Pi): onde procurar aparelho que nao responde ao broadcast."""
+    try:
+        saida = subprocess.run(["ip", "-4", "neigh", "show"], capture_output=True, text=True, timeout=5).stdout
+    except Exception:
+        return []
+    return [l.split()[0] for l in saida.splitlines() if l and "FAILED" not in l and "INCOMPLETE" not in l]
+
+
+def gravar_ip(id_, ip, versao):
+    """Guarda o IP achado no devices.json, para valer tambem depois de reiniciar."""
+    arq = BASE / "devices.json"
+    with _trava_devices:
+        dados = json.loads(arq.read_text(encoding="utf-8"))
+        for d in dados:
+            if d["id"] == id_:
+                d["ip"], d["version"] = ip, versao
+        arq.write_text(json.dumps(dados, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
 def ler_config():
@@ -61,7 +82,7 @@ class Luz:
     # ---------- conexao ----------
     def dev(self):
         if self._dev is None:
-            d = tinytuya.Device(self.id, self.cfg.get("ip") or "Auto", self.cfg["key"],
+            d = tinytuya.Device(self.cfg["id"], self.cfg.get("ip") or "Auto", self.cfg["key"],
                                 version=float(self.cfg.get("version") or 3.3))
             d.set_socketPersistent(True)
             d.set_socketTimeout(2)
@@ -70,19 +91,46 @@ class Luz:
         return self._dev
 
     def redescobrir(self):
-        """Se a luz mudou de IP (DHCP), acha de novo pelo broadcast da rede local."""
+        """Luz sem IP ou que mudou de IP (DHCP): acha pelo broadcast da rede local e, se nao achar, testando a chave."""
         if time.time() - self._ultima_busca < 30:
             return
         self._ultima_busca = time.time()
+        achado = None
         try:
-            r = tinytuya.find_device(self.id)
+            r = tinytuya.find_device(self.cfg["id"])
             if r and r.get("ip"):
-                self.cfg["ip"] = r["ip"]
-                if r.get("version"):
-                    self.cfg["version"] = r["version"]
-                self._dev = None
+                achado = (r["ip"], str(r.get("version") or self.cfg.get("version") or "3.3"))
         except Exception:
             pass
+        achado = achado or self._procurar_pela_chave()
+        if achado and achado != (self.cfg.get("ip"), str(self.cfg.get("version"))):
+            self.cfg["ip"], self.cfg["version"] = achado
+            self._dev = None
+            gravar_ip(self.cfg["id"], *achado)
+
+    def _procurar_pela_chave(self):
+        """Aparelho que nao responde ao broadcast (ex.: paineis Ekaza): testa a chave nos IPs da rede que nenhuma luz usa."""
+        usados = {l.cfg.get("ip") for l in luzes if l.cfg is not self.cfg}
+        for ip in vizinhos():
+            if ip in usados:
+                continue
+            try:
+                socket.create_connection((ip, 6668), timeout=1).close()
+            except OSError:
+                continue
+            for versao in dict.fromkeys([str(self.cfg.get("version") or "3.5"), "3.5", "3.4", "3.3"]):
+                d = tinytuya.Device(self.cfg["id"], ip, self.cfg["key"], version=float(versao))
+                d.set_socketTimeout(2)
+                d.set_socketRetryLimit(1)
+                try:
+                    ok = "dps" in (d.status() or {})
+                except Exception:
+                    ok = False
+                finally:
+                    d.close()
+                if ok:
+                    return ip, versao
+        return None
 
     def _drenar(self):
         """Descarta respostas acumuladas dos envios sem espera (nowait). Sem isso a fila enche em ~3 min
@@ -141,30 +189,33 @@ class Luz:
                 return
             self._falhas = 0
             self.online = True
-            # o tipo so e decidido uma vez; respostas parciais (so alguns dps) nunca rebaixam a luz
-            if self.tipo is None:
-                if any(k in st for k in ("20", "21", "22", "23", "24", "25")):
-                    self.tipo = "B"
-                elif "1" in st and "5" in st:
-                    self.tipo = "A"
-                elif "1" in st and not (self.tem_cor or self.tem_efeito):
-                    self.tipo = "so_liga"
-            if self.tipo == "B":
-                if "20" in st:
-                    self.ligada = bool(st["20"])
-                if not self.efeito:  # durante o efeito a luz se reporta em "colour"
-                    self.modo = st.get("21", self.modo)
-                c = st.get("24")
-                if c and len(c) == 12 and self.modo == "colour" and not self.efeito:
-                    self.h, self.s, self.v = int(c[0:4], 16), int(c[4:8], 16) / 1000, int(c[8:12], 16) / 1000
-                    self.alvo_h, self.alvo_s, self.alvo_v = self.h, self.s, self.v
-            elif self.tipo == "A":
-                if "1" in st:
-                    self.ligada = bool(st["1"])
-                if not self.efeito:  # durante o efeito a luz se reporta em "colour"
-                    self.modo = st.get("2", self.modo)
-            elif self.tipo == "so_liga" and "1" in st:
+            self._interpretar(st)
+
+    def _interpretar(self, st):
+        # o tipo so e decidido uma vez; respostas parciais (so alguns dps) nunca rebaixam a luz
+        if self.tipo is None:
+            if any(k in st for k in ("20", "21", "22", "23", "24", "25")):
+                self.tipo = "B"
+            elif "1" in st and "5" in st:
+                self.tipo = "A"
+            elif "1" in st and not (self.tem_cor or self.tem_efeito):
+                self.tipo = "so_liga"
+        if self.tipo == "B":
+            if "20" in st:
+                self.ligada = bool(st["20"])
+            if not self.efeito:  # durante o efeito a luz se reporta em "colour"
+                self.modo = st.get("21", self.modo)
+            c = st.get("24")
+            if c and len(c) == 12 and self.modo == "colour" and not self.efeito:
+                self.h, self.s, self.v = int(c[0:4], 16), int(c[4:8], 16) / 1000, int(c[8:12], 16) / 1000
+                self.alvo_h, self.alvo_s, self.alvo_v = self.h, self.s, self.v
+        elif self.tipo == "A":
+            if "1" in st:
                 self.ligada = bool(st["1"])
+            if not self.efeito:  # durante o efeito a luz se reporta em "colour"
+                self.modo = st.get("2", self.modo)
+        elif self.tipo == "so_liga" and "1" in st:
+            self.ligada = bool(st["1"])
 
     # ---------- formatos ----------
     def _dp(self, nome):
@@ -331,6 +382,55 @@ class Luz:
                 "cap": {"cor": self.tem_cor, "branco_real": self.tem_branco, "efeito": self.tem_cor}}
 
 
+# Painel duplo (ex.: Ekaza EKHM-T5024): parte branca e borda colorida no mesmo aparelho, cada uma vira uma luz na tela.
+# Pontos medidos no app: 63 liga a parte branca (brilho 22, temperatura 23), 54 liga a borda (cor 24, modo 55), 20 liga o aparelho.
+DUAS_ZONAS = {"ferqrvswnyykj4r0"}  # product_id dos paineis Ekaza com borda RGB
+
+
+def eh_duas_zonas(cfg):
+    return cfg.get("duas_zonas") or cfg.get("product_id") in DUAS_ZONAS
+
+
+class ZonaDupla(Luz):
+    MAPAS = {"branco": {"liga": "63", "modo": "21", "brilho": "22", "temp": "23"},
+             "borda": {"liga": "54", "modo": "55", "cor": "24"}}
+
+    def __init__(self, cfg, nome, zona):
+        super().__init__(cfg, nome)
+        self.zona = zona
+        self.id = f'{cfg["id"]}~{zona}'
+        self.tipo = "B"
+        self.tem_branco = zona == "branco"
+        self.tem_cor = self.tem_efeito = zona == "borda"
+        self.modo = "white" if zona == "branco" else "colour"
+
+    def _dp(self, nome):
+        return self.MAPAS[self.zona].get(nome)
+
+    def _enviar(self, dps, nowait=False):
+        if dps.get(self._dp("liga")) is True:
+            dps = {"20": True, **dps}  # com o aparelho desligado no geral, ligar a zona nao acende nada
+        return super()._enviar(dps, nowait)
+
+    def _interpretar(self, st):
+        liga = self._dp("liga")
+        if liga in st:
+            self.ligada = bool(st[liga]) and st.get("20", True) is not False
+        if self.zona == "borda" and not self.efeito:
+            c = st.get("24")
+            if c and len(c) == 12:
+                self.h, self.s, self.v = int(c[0:4], 16), int(c[4:8], 16) / 1000, int(c[8:12], 16) / 1000
+                self.alvo_h, self.alvo_s, self.alvo_v = self.h, self.s, self.v
+        elif self.zona == "branco":
+            if "22" in st:
+                self.v = self.alvo_v = max(0.03, int(st["22"]) / 1000)
+            if "23" in st:
+                self.temp = int(st["23"]) / 1000
+
+    def eh_interruptor(self):
+        return False
+
+
 config = ler_config()
 luzes: list = []
 
@@ -341,9 +441,24 @@ def carregar():
     dados = json.loads(arq.read_text(encoding="utf-8")) if arq.exists() else []
     nomes = config.setdefault("nomes", {})
     removidos = set(config.get("removidos", []))
-    luzes = [Luz(d, nomes.get(d["id"]) or d.get("name") or d["id"]) for d in dados if d["id"] not in removidos]
+    luzes = []
+    for d in dados:
+        if d["id"] in removidos:
+            continue
+        base = nomes.get(d["id"]) or d.get("name") or d["id"]
+        if eh_duas_zonas(d):
+            for zona, rotulo in (("branco", "Branco"), ("borda", "Borda")):
+                zid = f'{d["id"]}~{zona}'
+                if zid not in removidos:
+                    luzes.append(ZonaDupla(d, nomes.get(zid) or f"{rotulo} · {base}", zona))  # zona na frente: nome longo e cortado na tela
+        else:
+            luzes.append(Luz(d, base))
     luzes += [magic.LuzMagic(d, nomes.get(d["id"]) or d.get("name") or d["id"]) for d in magic.ler_lista() if d["id"] not in removidos]
+    sem_ip = set()
     for l in luzes:
+        if isinstance(l, Luz) and not l.cfg.get("ip") and l.cfg["id"] not in sem_ip:
+            sem_ip.add(l.cfg["id"])  # as duas zonas de um painel duplo dividem o mesmo aparelho: procura uma vez
+            threading.Thread(target=l.redescobrir, daemon=True).start()
         threading.Thread(target=l.ler, daemon=True).start()
 
 

@@ -996,6 +996,7 @@ function desenharPasso() {
   $("#assVoltar").disabled = passo === 0 || ocupado;
   $("#assFechar").disabled = ocupado;
   $("#assProx").textContent = passo === PASSOS.length - 1 ? "Concluir" : "Próximo";
+  $("#assProx").hidden = tipo === "tuya" && passo === PASSOS.length - 1;  // ultimo passo Tuya: sai pelo QR ou pelo X, sem "Concluir"
   const travaNet = tipo === "tuya" && passo === 1 && !rede.internet;
   $("#assProx").disabled = (passo === 0 && !tipo) || travaNet || ocupado;
   $("#assInfo").textContent = ocupado ? "Aguarde terminar" : passo === 0 && !tipo ? "Escolha o tipo de aparelho" : travaNet ? "Ligue a internet para continuar" : "";
