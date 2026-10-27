@@ -507,7 +507,7 @@ const IC = {
 // [id, nome, cor de destaque, paleta do cartao (a mesma que a cena passeia nas luzes)]
 const CENAS = [["foco","Foco","hsl(200 35% 82%)","#cfe0ea,#9fb8c8,#e8f0f4,#cfe0ea"],["natureza","Floresta","hsl(125 70% 45%)","#2fb84a,#7ac02a,#1f9a6a,#2fb84a"],
   ["chuva","Chuva","hsl(212 60% 50%)","#3a6aa8,#24466e,#4a7ab0,#3a6aa8"],["tempestade","Tempestade","hsl(248 50% 42%)","#2a2a6a,#5a4aa0,#14143c,#2a2a6a"],["fogueira","Fogueira","hsl(26 95% 55%)","#ff8a1a,#b8400a,#ffb040,#ff8a1a"],
-  ["noite","Noite","hsl(232 60% 45%)","#26338a,#2a1f6a,#1a2a7a,#26338a"],["desligar","Desligar","#5b6177","#3a3f52,#2c3042,#3a3f52"]];
+  ["noite","Noite","hsl(232 60% 45%)","#26338a,#2a1f6a,#1a2a7a,#26338a"],["festa","Festa","hsl(320 80% 60%)","#ff4fa0,#ffd23a,#2ad8e8,#ff8a2a,#a050ff,#ff4fa0"],["desligar","Desligar","#5b6177","#3a3f52,#2c3042,#3a3f52"]];
 const PRESETS = [["Vela", 0, "#ff9a3d"], ["Quente", 0.3, "#ffc98a"], ["Neutro", 0.6, "#fff3e2"], ["Dia", 1, "#dbe8ff"]];
 const CORES = [0, 15, 30, 45, 60, 90, 120, 150, 170, 190, 210, 230, 250, 270, 290, 310, 330, 345];
 const EFEITOS = [["arcoiris","Arco-íris","#ff3b3b,#ff9f1a,#ffe31a,#2ee860,#1ad0f0,#3b5bff,#b03bff,#ff3b3b"],
@@ -541,7 +541,7 @@ $$("#abas button").forEach(b => b.onclick = () => {
 });
 
 // cenas
-IC.tempestade = IC.raio;
+IC.tempestade = IC.raio; IC.festa = IC.brincar;
 $("#cenas").innerHTML = CENAS.map(([id, n, c, g]) => `<button class="cena" data-id="${id}" style="--c:${c};--g:${g}">${IC[id]}<span>${n}</span></button>`).join("");
 $$(".cena").forEach(b => b.onclick = () => {
   const id = b.dataset.id;

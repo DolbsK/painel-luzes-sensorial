@@ -2,17 +2,18 @@
   "antecipa": 0.15,
   "sons": {
     "tranquila": {"nome": "Tranquila", "tipo": "playlist", "faixas": ["tranquila-1.ogg", "tranquila-2.ogg", "tranquila-3.ogg", "tranquila-4.ogg", "tranquila-5.ogg"]},
+    "festa":     {"nome": "Festa",     "tipo": "playlist", "faixas": ["festa-1.ogg", "festa-2.ogg", "festa-3.ogg"]},
     "caixinha":  {"nome": "Caixinha",  "tipo": "playlist", "faixas": ["caixinha-1.ogg", "caixinha-2.ogg", "caixinha-3.ogg"]},
     "fogueira":  {"nome": "Fogueira",  "tipo": "loop", "faixas": ["fogueira.ogg"], "marcas": "fogueira.marcas.json"},
     "natureza":  {"nome": "Floresta",  "tipo": "loop", "faixas": ["natureza.ogg"],
-                  "eventos": {"intervalo": [40, 120], "itens": [
-                    {"faixa": "bicho-macaco-1.ogg", "peso": 3}, {"faixa": "bicho-macaco-2.ogg", "peso": 3},
-                    {"faixa": "bicho-tucano-1.ogg", "peso": 3}, {"faixa": "bicho-ave-1.ogg", "peso": 3},
-                    {"faixa": "bicho-sapos-1.ogg", "peso": 2}]}},
+                  "eventos": {"intervalo": [45, 90], "itens": [
+                    {"faixa": "bicho-leao-1.ogg", "peso": 4}, {"faixa": "bicho-leao-2.ogg", "peso": 3},
+                    {"faixa": "bicho-macaco-3.ogg", "peso": 2}, {"faixa": "bicho-elefante-1.ogg", "peso": 2},
+                    {"faixa": "bicho-tucano-1.ogg", "peso": 2, "ganho": 1.4}]}},
     "mar":       {"nome": "Mar",       "tipo": "loop", "faixas": ["mar.ogg"], "marcas": "mar.marcas.json"},
     "chuva":     {"nome": "Chuva",     "tipo": "loop", "faixas": ["chuva.ogg"]},
     "tempestade": {"nome": "Tempestade", "tipo": "loop", "faixas": ["tempestade.ogg"], "marcas": "tempestade.marcas.json"}
   },
-  "cenas":   {"foco": "tranquila", "natureza": "natureza", "chuva": "chuva", "tempestade": "tempestade", "fogueira": "fogueira", "noite": "caixinha"},
+  "cenas":   {"foco": "tranquila", "natureza": "natureza", "chuva": "chuva", "tempestade": "tempestade", "fogueira": "fogueira", "noite": "caixinha", "festa": "festa"},
   "efeitos": {}
 }

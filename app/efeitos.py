@@ -9,6 +9,7 @@ QUADRO_S = 0.2  # intervalo entre cores enviadas a cada luz durante efeito ou ce
 
 # Cenas vivas: passeiam bem devagar entre tons vizinhos (passo_s = segundos de um tom ao proximo).
 # passos: (cor em graus, saturacao 0-1, fator do brilho da barra). Cena com h/s fica parada (Foco).
+# branco_fundo: (temperatura 0-1, brilho 0-1) das luzes so de branco; sem ele, a cena colorida apaga essas luzes.
 CENAS = {
     "foco":      {"branco": 0.7},  # luz branca neutra e parada: acende tambem as luzes so de branco
     "natureza":  {"passos": [(125, .95, 1), (95, .92, 1), (150, .90, .9), (80, .88, 1)], "passo_s": 10},  # verdes vivos + limao (sol nas folhas)
@@ -16,6 +17,8 @@ CENAS = {
     "tempestade": {"passos": [(235, .85, .45), (250, .80, .30), (225, .90, .40), (262, .75, .35)], "passo_s": 8,
                    "relampago": True},  # azul e violeta escuros; clareia nos trovoes do som
     "fogueira":  {"passos": [(28, .95, 1), (18, 1, .55), (35, .9, .85), (22, 1, .4), (30, .95, .9), (15, 1, .65)], "passo_s": 2.5},  # pisca nos estalos do som
+    "festa":     {"passos": [(330, 1, 1), (50, 1, 1), (185, 1, 1), (25, 1, 1), (280, .95, 1), (130, .95, 1)], "passo_s": 3,
+                   "branco_fundo": (0.5, 0.08)},  # cores vivas, troca suave (sem pisca); partes brancas do teto a 8%
     "noite":     {"passos": [(232, .85, .45), (250, .80, .35), (222, .85, .4)], "passo_s": 14},
 }
 

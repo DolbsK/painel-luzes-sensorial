@@ -548,10 +548,15 @@ def api_cena(p: Pedido):
     for l in alvos(p.alvos):
         if "branco" in c:
             if l.tem_branco or l.tem_cor:
-                threading.Thread(target=l.branco, args=(c["branco"],), daemon=True).start()
+                # volta ao brilho de antes do branco_fundo (senao o Foco herdaria os 8% da Festa)
+                threading.Thread(target=l.branco, args=(c["branco"], l.__dict__.pop("v_fundo_ant", None)), daemon=True).start()
         elif not l.tem_cor:
-            # luz que so faz branco (parte branca dos paineis duplos): apaga, para nao lavar as cores da cena
-            if l.tem_branco and l.ligada:
+            # luz que so faz branco (parte branca dos paineis duplos): fica bem fraca (branco_fundo) ou apaga,
+            # para nao lavar as cores da cena
+            if l.tem_branco and "branco_fundo" in c:
+                l.__dict__.setdefault("v_fundo_ant", l.alvo_v)
+                threading.Thread(target=l.branco, args=c["branco_fundo"], daemon=True).start()
+            elif l.tem_branco and l.ligada:
                 threading.Thread(target=l.ligar, args=(False,), daemon=True).start()
         elif "passos" in c:
             threading.Thread(target=l.aplicar_efeito, args=("cena_" + p.nome, 1), daemon=True).start()
@@ -591,6 +596,7 @@ def api_efeito(p: Pedido):
 @app.post("/api/brilho")
 def api_brilho(p: Pedido):
     for l in alvos(p.alvos):
+        l.__dict__.pop("v_fundo_ant", None)
         threading.Thread(target=l.brilho, args=(p.v,), daemon=True).start()
     return {"ok": True}
 
@@ -905,7 +911,7 @@ def api_magic_aps():
 
 @app.post("/api/magic/configurar")
 def api_magic_configurar(w: Wifi):
-    magic.configurar(w.ssid, carregar)
+    magic.configurar(w.ssid, _apos_cadastro)  # fita removida antes e configurada de novo volta ao painel
     return {"ok": True}
 
 

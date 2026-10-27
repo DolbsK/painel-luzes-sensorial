@@ -28,15 +28,15 @@ def salvar_lista(lista):
         tmp.replace(ARQ)
 
 
-def descobrir(timeout=5):
-    """Procura controladores ja na rede da sala; atualiza IPs e devolve os novos."""
+def descobrir(timeout=5, todos=False):
+    """Procura controladores ja na rede da sala; atualiza IPs e devolve os novos (todos=True: todos os achados)."""
     try:
         achados = BulbScanner().scan(timeout=timeout, address=AJ["rede_sala"])
     except Exception:
         achados = []
     lista = ler_lista()
     por_id = {d["id"]: d for d in lista}
-    novos = []
+    novos, vistos = [], []
     for a in achados:
         d = por_id.get(a["id"])
         if d:
@@ -45,8 +45,9 @@ def descobrir(timeout=5):
             d = {"id": a["id"], "name": f"Fita Magic Home {a['id'][-4:]}", "ip": a["ipaddr"], "model": a.get("model_description", "")}
             lista.append(d)
             novos.append(d)
+        vistos.append(d)
     salvar_lista(lista)
-    return novos
+    return vistos if todos else novos
 
 
 class LuzMagic:
@@ -301,6 +302,7 @@ def configurar(ap, ao_terminar):
 
     def run():
         voltar = _wifi_ativo()
+        alvo = None
         try:
             if not AJ["wifi_sala"]["ssid"]:
                 raise RuntimeError("o Wi-Fi da sala não está configurado (ajustes.json)")
@@ -339,6 +341,9 @@ def configurar(ap, ao_terminar):
                     break
             if not resposta:
                 raise RuntimeError("o controlador não respondeu")
+            # resposta "10.10.123.3,<MAC>,<modelo>": o MAC e o id da fita (vale tambem para fita ja cadastrada ou removida antes)
+            partes = resposta[0].split(",")
+            alvo = partes[1].strip().upper() if len(partes) > 1 else None
             _at(s, "+ok", 0.5)
             r1 = _at(s, f"AT+WSSSID={AJ['wifi_sala']['ssid']}\r")
             r2 = _at(s, f"AT+WSKEY=WPA2PSK,AES,{AJ['wifi_sala']['senha']}\r")
@@ -357,16 +362,17 @@ def configurar(ap, ao_terminar):
             if voltar and voltar != ap:
                 _nm("con", "up", voltar)
         status.update(etapa="buscando", msg="Controlador configurado! Esperando ele entrar na rede da sala...")
-        novos = []
+        novos, antes = [], {d["id"] for d in ler_lista()}
         for _ in range(12):  # ate ~60 s
             time.sleep(5)
-            novos = descobrir(4)
+            vistos = descobrir(4, todos=True)
+            novos = [d for d in vistos if (d["id"] == alvo if alvo else d["id"] not in antes)]
             if novos:
                 break
-        ao_terminar()
+        ao_terminar([d["id"] for d in novos])
         _log("busca na sala ->", [d["id"] for d in novos])
         if novos:
-            status.update(etapa="pronto", nomes=[d["name"] for d in novos], msg="1 fita nova no painel!" if len(novos) == 1 else f"{len(novos)} fitas novas no painel!")
+            status.update(etapa="pronto", nomes=[d["name"] for d in novos], msg="Fita no painel!")
         else:
             status.update(etapa="erro", msg="O controlador foi configurado mas ainda não apareceu na rede. Toque em \"Procurar fitas já na sala\" em 1 minuto.")
 
