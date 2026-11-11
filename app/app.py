@@ -110,7 +110,8 @@ class Luz:
 
     def _procurar_pela_chave(self):
         """Aparelho que nao responde ao broadcast (ex.: paineis Ekaza): testa a chave nos IPs da rede que nenhuma luz usa."""
-        usados = {l.cfg.get("ip") for l in luzes if l.cfg is not self.cfg}
+        # so conta IP de luz online: luz fora do ar pode ter perdido o IP para outro aparelho (DHCP)
+        usados = {l.cfg.get("ip") for l in luzes if l.cfg is not self.cfg and l.online}
         for ip in vizinhos():
             if ip in usados:
                 continue
