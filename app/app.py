@@ -920,3 +920,44 @@ def api_magic_configurar(w: Wifi):
 def api_magic_buscar():
     magic.buscar_na_sala(carregar)
     return {"ok": True}
+
+
+def vigia_magic_fabrica():
+    """Fita Magic Home ja cadastrada que voltou ao modo de fabrica (rede aberta LEDnet...<fim do MAC>, ex.: liga/desliga
+    seguido numa queda de energia) recebe o Wi-Fi da sala de novo sozinha, sem ninguem abrir o assistente.
+    So age com fita fora do ar, sem cadastro em andamento e com a tela parada ha 1 min. O Wi-Fi do Pi sai do
+    hotspot por ~1 min durante a configuracao; as luzes (cabo) nao param."""
+    tentativas = {}  # id -> (quantas vezes, quando foi a ultima)
+    time.sleep(90)  # depois de ligar, da tempo de as luzes reconectarem
+    while True:
+        try:
+            fora = [l.id for l in luzes if isinstance(l, magic.LuzMagic) and not l.online]
+            for i in list(tentativas):
+                if i not in fora:
+                    del tentativas[i]  # voltou: zera a contagem
+            ocupado = (rede.cadastro["etapa"] in ("qr", "importando")
+                       or magic.status["etapa"] in ("configurando", "buscando")
+                       or time.time() - uso["ultimo"] < 60)
+            if fora and not ocupado:
+                # busca sem log (o magic.aps() grava no magic.log a cada chamada; fita desligada de vez encheria o log)
+                saida = subprocess.run(["sudo", "-n", "nmcli", "-t", "-f", "SSID", "dev", "wifi", "list", "--rescan", "yes",
+                                        "ifname", magic.WIFI_IF], capture_output=True, text=True, timeout=60).stdout
+                for ssid in dict.fromkeys(s.strip() for s in saida.splitlines()):
+                    if not ssid.upper().startswith("LEDNET"):
+                        continue
+                    alvo = next((i for i in fora if ssid.upper().endswith(i[-6:].upper())), None)
+                    if not alvo:
+                        continue
+                    n, quando = tentativas.get(alvo, (0, 0))
+                    if time.time() - quando < min(600 * 2 ** n, 7200):  # 10 min, 20, 40... ate 2 h entre tentativas
+                        continue
+                    tentativas[alvo] = (n + 1, time.time())
+                    magic._log("AUTO", ssid, "e a fita", alvo, "em modo de fabrica: configurando sozinho, tentativa", n + 1)
+                    magic.configurar(ssid, _apos_cadastro)
+                    break
+        except Exception as e:
+            magic._log("AUTO erro", repr(e))
+        time.sleep(120)
+
+
+threading.Thread(target=vigia_magic_fabrica, daemon=True).start()
