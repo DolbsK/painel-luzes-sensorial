@@ -71,7 +71,6 @@ if [ "$MODO" != atualizar ]; then
   apt-get update -qq
   apt-get install -y -qq python3-venv network-manager iw curl rsync git labwc kanshi libinput-tools
   apt-get install -y -qq chromium 2>/dev/null || apt-get install -y -qq chromium-browser
-  apt-get install -y -qq wlopm || aviso "wlopm não instalado: a tela não apaga na hibernação (o véu preto continua)."
 fi
 
 # ---------- 5. painel ----------
@@ -111,6 +110,9 @@ systemctl restart luzes
 # botao "Reiniciar" em Ajustes: so reiniciar o painel e o Raspberry, sem senha (vale tambem no --atualizar)
 echo "$USUARIO ALL=(root) NOPASSWD: /usr/bin/systemctl restart luzes, /usr/bin/systemctl reboot" >/tmp/luzes-reiniciar
 visudo -cqf /tmp/luzes-reiniciar && install -m 440 /tmp/luzes-reiniciar /etc/sudoers.d/luzes-reiniciar; rm -f /tmp/luzes-reiniciar
+
+# hibernacao da tela: wlopm apaga o monitor (vale tambem no --atualizar, para paineis ja instalados receberem)
+command -v wlopm >/dev/null || apt-get install -y -qq wlopm || aviso "wlopm não instalado: na hibernação a tela fica preta, mas o monitor não desliga."
 
 # atualizacao automatica pelo GitHub (vale tambem no --atualizar, para paineis ja instalados receberem)
 passo "Atualização automática pelo GitHub (toda noite à 1h, com internet e sem uso)"
