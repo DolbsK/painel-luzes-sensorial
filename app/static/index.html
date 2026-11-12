@@ -301,6 +301,10 @@ nav button.on { background: #eef1fb; color: #15193a; }
 .vol-aj input { flex: 1; width: auto; height: 34px; }
 .vol-aj b { color: var(--texto); min-width: 40px; text-align: right; }
 .cena svg.i.nota-som, .efeito svg.i.nota-som { position: absolute; top: 9px; right: 9px; width: 22px; height: 22px; opacity: .85; }
+/* hibernacao: veu preto por cima de tudo; o toque que acorda fica nele e nao aperta botao */
+.repouso { position: fixed; inset: 0; z-index: 50; background: #000; display: none; cursor: none; }
+.repouso.on { display: block; }
+body.dormindo *, body.dormindo *::after { animation-play-state: paused !important; }
 </style>
 </head>
 <body class="home">
@@ -385,6 +389,7 @@ nav button.on { background: #eef1fb; color: #15193a; }
   </section>
 </main>
 
+<div class="repouso" id="repouso"></div>
 <div class="veu-som" id="veuSom"></div>
 <div class="painel-som" id="painelSom">
   <div class="cab"><span>Volume do som</span><span id="volPainelTxt">35%</span></div>
@@ -517,6 +522,39 @@ const ABAS = [["inicio","Início","casa"],["cenas","Cenas","brincar"],["branco",
 
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
+
+// ---------- hibernacao: depois de AJ.hibernar_min sem toque a tela apaga; o 1o toque so acende ----------
+// Luzes, efeitos e som seguem normais. Dormindo, a tela para as consultas ao servidor e as animacoes.
+// O veu preto segura o toque que acorda, para ele nao apertar o botao que estava por baixo.
+const Repouso = (() => {
+  const r = { dormindo: false };
+  let ultimo = Date.now();
+  const tela = on => fetch("/api/tela", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ on }) }).catch(() => {});
+  ["pointerdown", "keydown", "input", "wheel"].forEach(t => document.addEventListener(t, () => { ultimo = Date.now(); }, true));
+  function dormir() {
+    if ($("#folhaAssist").classList.contains("on")) return; // cadastro em andamento: nao interrompe
+    $$(".folha.on, #painelSom.on, #veuSom.on").forEach(f => f.classList.remove("on"));
+    const ini = document.querySelector('#abas button[data-aba="inicio"]'); if (ini) ini.click(); // Cenas/Efeitos animam sem parar
+    r.dormindo = true; document.body.classList.add("dormindo"); $("#repouso").classList.add("on");
+    tela(false);
+  }
+  function acordar() {
+    if (!r.dormindo) return;
+    r.dormindo = false; document.body.classList.remove("dormindo"); ultimo = Date.now();
+    tela(true); relogio(); atualizar(); lerRede();
+  }
+  const veu = $("#repouso");
+  let tSoltar;
+  const soltar = () => { clearTimeout(tSoltar); veu.classList.remove("on"); };
+  veu.addEventListener("pointerdown", e => { e.preventDefault(); e.stopPropagation(); acordar(); clearTimeout(tSoltar); tSoltar = setTimeout(soltar, 800); });
+  veu.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); soltar(); });
+  setInterval(() => {
+    const min = Number(AJ.hibernar_min ?? 10);
+    if (min > 0 && !r.dormindo && Date.now() - ultimo > min * 60000) dormir();
+  }, 15000);
+  tela(true); // Chromium reiniciou com a tela apagada: acende de novo
+  return r;
+})();
 // todo texto que vem de fora (nome de luz, Wi-Fi de vizinho, mensagem de erro) passa por aqui antes de ir para o HTML
 const esc = t => String(t ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 let AJ = { sala: "Sala Sensorial", wifi_sala: { ssid: "", senha: "" }, hotspot: { ssid: "", senha: "" } };
@@ -613,7 +651,7 @@ function relogio() {
   $("#hora").textContent = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   $("#data").textContent = d.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
 }
-relogio(); setInterval(relogio, 5000);
+relogio(); setInterval(() => { if (!Repouso.dormindo) relogio(); }, 5000);
 const CLIMA = c => c === 0 ? ["sol", "Céu limpo"] : c <= 2 ? ["sol", "Poucas nuvens"] : c === 3 ? ["nuvem", "Nublado"] : c <= 48 ? ["nuvem", "Neblina"]
   : c <= 67 || (c >= 80 && c <= 82) ? ["chuva", "Chuva"] : c <= 77 || c <= 86 ? ["nuvem", "Frio"] : ["raio", "Tempestade"];
 async function lerClima() {
@@ -1023,7 +1061,7 @@ $("#assProx").onclick = () => {
   else fecharAssist();
 };
 $("#assFechar").onclick = fecharAssist;
-lerRede(); setInterval(() => lerRede(), 2000);
+lerRede(); setInterval(() => { if (!Repouso.dormindo) lerRede(); }, 2000);
 
 
 async function atualizar() {
@@ -1038,7 +1076,7 @@ async function atualizar() {
   } catch (e) { $("#resumo").textContent = "painel sem conexão"; }
 }
 atualizar();
-setInterval(atualizar, 4000);
+setInterval(() => { if (!Repouso.dormindo) atualizar(); }, 4000);
 document.addEventListener("contextmenu", e => e.preventDefault());
 
 // ---------- som das cenas e efeitos (Web Audio; toca aqui na tela, nao no servidor) ----------

@@ -71,6 +71,7 @@ if [ "$MODO" != atualizar ]; then
   apt-get update -qq
   apt-get install -y -qq python3-venv network-manager iw curl rsync git labwc kanshi libinput-tools
   apt-get install -y -qq chromium 2>/dev/null || apt-get install -y -qq chromium-browser
+  apt-get install -y -qq wlopm || aviso "wlopm não instalado: a tela não apaga na hibernação (o véu preto continua)."
 fi
 
 # ---------- 5. painel ----------

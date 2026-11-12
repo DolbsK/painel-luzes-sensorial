@@ -13,6 +13,7 @@ PADRAO = {
     "rede_sala": "192.168.0.255",                 # broadcast da rede da sala (cabo do computador)
     "wifi_if": "wlan0",                           # placa Wi-Fi do computador
     "smartlife_codigo": "",                       # codigo de usuario padrao da conta Smart Life
+    "hibernar_min": 10,                           # minutos sem toque ate apagar a tela (0 = nunca apaga)
 }
 
 
@@ -32,4 +33,4 @@ AJ = _ler()
 
 def publico():
     """O que a tela precisa saber (o assistente mostra o Wi-Fi da sala e do hotspot na tela)."""
-    return {"sala": AJ["sala"], "wifi_sala": AJ["wifi_sala"], "hotspot": AJ["hotspot"]}
+    return {"sala": AJ["sala"], "wifi_sala": AJ["wifi_sala"], "hotspot": AJ["hotspot"], "hibernar_min": AJ["hibernar_min"]}

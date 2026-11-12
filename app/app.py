@@ -1,5 +1,5 @@
 # Painel de luzes da sala sensorial: controla luzes Tuya e Magic Home pela rede local (sem nuvem)
-import colorsys, json, socket, subprocess, threading, time, urllib.request
+import colorsys, json, os, socket, subprocess, threading, time, urllib.request
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -499,7 +499,7 @@ uso = {"ultimo": time.time()}  # ultimo comando na tela (a atualizacao automatic
 
 @app.middleware("http")
 async def marcar_uso(request, call_next):
-    if request.method == "POST":
+    if request.method == "POST" and request.url.path != "/api/tela":  # apagar/acender a tela nao conta como uso
         uso["ultimo"] = time.time()
     return await call_next(request)
 
@@ -794,6 +794,22 @@ def api_reiniciar(p: Pedido):
         return {"ok": False}
     subprocess.Popen(["sh", "-c", cmd], start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return {"ok": True}
+
+
+@app.post("/api/tela")
+def api_tela(p: Pedido):
+    """Hibernacao: a tela pede para apagar o monitor depois de um tempo sem toque e para acender no primeiro toque.
+    So apaga a imagem (wlopm); luzes, efeitos e som seguem normais. O servico nao herda as variaveis do Wayland."""
+    run = Path(f"/run/user/{os.getuid()}")
+    soquetes = sorted(s.name for s in run.glob("wayland-*") if not s.name.endswith(".lock"))
+    if not soquetes:
+        return {"ok": False}
+    env = {**os.environ, "XDG_RUNTIME_DIR": str(run), "WAYLAND_DISPLAY": soquetes[0]}
+    try:
+        r = subprocess.run(["wlopm", "--on" if p.on else "--off", "*"], env=env, capture_output=True, timeout=5)
+    except (OSError, subprocess.TimeoutExpired):
+        return {"ok": False}
+    return {"ok": r.returncode == 0}
 
 
 @app.post("/api/hora")

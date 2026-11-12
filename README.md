@@ -55,6 +55,10 @@ Antes de atualizar, guarda o código atual em `~/luzes.anterior`. Se o painel n�
 
 Para pausar (por exemplo, testando código direto no Pi), crie o arquivo `~/luzes/.sem-atualizacao-auto`. Para ver o que faria sem mudar nada: `sudo SIMULAR=1 USUARIO=$USER PASTA=$HOME/luzes /usr/local/sbin/luzes-atualizar`.
 
+## Hibernação da tela
+Depois de 10 minutos sem toque, a tela volta para a aba Início, para de consultar o servidor e apaga o monitor (`wlopm`). Luzes, efeitos e som continuam. O primeiro toque só acende a tela e não aperta nenhum botão. Com o assistente de cadastro aberto, ela não hiberna.
+O tempo fica em `ajustes.json`, campo `hibernar_min` (`0` = nunca apaga). Depois de mudar, reinicie o painel (`sudo systemctl restart luzes`).
+
 ## Som
 O som toca no navegador da tela (Web Audio), não no servidor. Cada cena ou efeito aponta para um som em `app/static/sons/sons.json`; trocar ou acrescentar som é só mexer nesse arquivo e nos áudios, sem mexer no código.
 - **Os áudios não vão para este repositório** (a licença de muitos bancos de som proíbe distribuir o arquivo sozinho). Ponha os `.ogg` em `app/static/sons/` do seu painel. Sem eles o painel funciona normal, só sem som. `app/static/sons/CREDITOS.md` registra de onde veio cada faixa na instalação original.
