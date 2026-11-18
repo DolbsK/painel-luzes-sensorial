@@ -3,8 +3,7 @@ Description=Vigia da tela do painel (toque sempre acende a tela)
 After=luzes.service
 
 [Service]
-User=__USUARIO__
-SupplementaryGroups=input
+# root: o reinicio USB do toque exige; wlopm e pkill agem na sessao do dono da pasta
 ExecStart=/usr/bin/python3 __PASTA__/tela-vigia.py __PASTA__
 Restart=always
 RestartSec=5

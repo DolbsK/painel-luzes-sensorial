@@ -5,9 +5,12 @@ Le o toque direto do kernel (/dev/input), por fora do labwc e do Chromium. Com a
 pela pagina acender sozinha; se nao acendeu, acende o monitor (wlopm) e reabre o Chromium (o lwrespawn reabre).
 Grava em tela.log (na pasta do painel) cada toque com a tela apagada, cada mudanca de estado e um resumo a cada
 30 min. O arquivo vai para o cartao na hora (fsync), para sobrar registro se a energia for cortada.
+Com a tela apagada, reinicia o controlador de toque pelo USB a cada 30 min (o mesmo que tirar e pôr o cabo de
+dados): o toque nao fica horas parado. Roda como root (o reinicio USB exige); o Wayland e do dono da pasta do painel.
+Teste: `sudo systemctl kill -s USR1 tela-vigia` reinicia o toque na hora.
 Sem dependencias: so a biblioteca padrao do Python.
 """
-import glob, os, select, struct, subprocess, sys, time
+import fcntl, glob, os, select, signal, struct, subprocess, sys, time
 from datetime import datetime
 from pathlib import Path
 
@@ -17,7 +20,11 @@ LOG_MAX = 512 * 1024
 EVENTO = struct.Struct("llHHi")  # struct input_event (timeval, type, code, value)
 ESPERA_PAGINA = 3.0  # segundos para a pagina acender sozinha antes da vigia agir
 RESUMO_S = 30 * 60
-RUN = Path(f"/run/user/{os.getuid()}")
+RESET_S = 30 * 60  # com a tela apagada, reinicia o toque pelo USB a cada 30 min
+USBDEVFS_RESET = 0x5514
+DONO = PASTA.stat().st_uid
+RUN = Path(f"/run/user/{DONO}")
+pedido_reset = []
 
 
 def log(msg):
@@ -28,6 +35,8 @@ def log(msg):
             f.write(f"{datetime.now():%Y-%m-%d %H:%M:%S} {msg}\n")
             f.flush()
             os.fsync(f.fileno())
+        if os.getuid() == 0:
+            os.chown(LOG, DONO, PASTA.stat().st_gid)
     except OSError:
         pass
 
@@ -92,12 +101,36 @@ def abrir_dispositivos(abertos):
             log(f"sem acesso a {ev} ({nome}): {e}")
 
 
+def resetar_usb(abertos, motivo):
+    """Reinicio de porta USB (USBDEVFS_RESET) de cada dispositivo de toque aberto. O kernel recria o /dev/input."""
+    feitos = set()
+    for ev, (_, nome) in list(abertos.items()):
+        d = Path(f"/sys/class/input/{ev}/device").resolve()
+        while d != d.parent and not (d / "busnum").exists():
+            d = d.parent
+        if not (d / "busnum").exists() or d in feitos:
+            continue
+        feitos.add(d)
+        no = f"/dev/bus/usb/{int((d / 'busnum').read_text()):03d}/{int((d / 'devnum').read_text()):03d}"
+        try:
+            fd = os.open(no, os.O_WRONLY)
+            try:
+                fcntl.ioctl(fd, USBDEVFS_RESET, 0)
+            finally:
+                os.close(fd)
+            log(f"toque reiniciado pelo USB ({motivo}): {nome} {no}")
+        except OSError as e:
+            log(f"falha ao reiniciar {nome} {no}: {e}")
+
+
 def chromium_rodando():
     return subprocess.run(["pgrep", "-x", "chromium"], capture_output=True).returncode == 0
 
 
 def main():
     log(f"vigia iniciada, pid {os.getpid()}")
+    signal.signal(signal.SIGUSR1, lambda *_: pedido_reset.append(1))
+    prox_reset = None  # so conta com a tela apagada
     abertos = {}
     abrir_dispositivos(abertos)
     ultimo_toque = 0.0
@@ -143,6 +176,16 @@ def main():
                     log(f"Chromium nao fechou em 5 s: {len(presos)} processos fechados a forca")
             else:
                 log("pagina acendeu a tela")
+        apagada = bool(ult_estado) and any(v == "off" for v in ult_estado.values())
+        if not apagada:
+            prox_reset = None
+        elif prox_reset is None:
+            prox_reset = agora + RESET_S
+        if pedido_reset or (prox_reset is not None and agora >= prox_reset):
+            resetar_usb(abertos, "teste manual" if pedido_reset else "tela apagada ha 30 min")
+            pedido_reset.clear()
+            prox_reset = agora + RESET_S if apagada else None
+            prox_scan = agora + 3  # reabrir o /dev/input novo logo
         if agora >= prox_scan:
             abrir_dispositivos(abertos)
             prox_scan = agora + 60
