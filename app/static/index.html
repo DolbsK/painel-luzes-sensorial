@@ -524,13 +524,14 @@ const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 
 // ---------- hibernacao: depois de AJ.hibernar_min sem toque a tela apaga; o 1o toque so acende ----------
+// performance.now() e nao Date.now(): o relogio do Pi pula horas quando acerta pela internet e apagaria a tela na hora
 // Luzes, efeitos e som seguem normais. Dormindo, a tela para as consultas ao servidor e as animacoes.
 // O veu preto segura o toque que acorda, para ele nao apertar o botao que estava por baixo.
 const Repouso = (() => {
   const r = { dormindo: false };
-  let ultimo = Date.now();
+  let ultimo = performance.now();
   const tela = on => fetch("/api/tela", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ on }) }).catch(() => {});
-  ["pointerdown", "keydown", "input", "wheel"].forEach(t => document.addEventListener(t, () => { ultimo = Date.now(); }, true));
+  ["pointerdown", "keydown", "input", "wheel"].forEach(t => document.addEventListener(t, () => { ultimo = performance.now(); }, true));
   function dormir() {
     if ($("#folhaAssist").classList.contains("on")) return; // cadastro em andamento: nao interrompe
     $$(".folha.on, #painelSom.on, #veuSom.on").forEach(f => f.classList.remove("on"));
@@ -540,7 +541,7 @@ const Repouso = (() => {
   }
   function acordar() {
     if (!r.dormindo) return;
-    r.dormindo = false; document.body.classList.remove("dormindo"); ultimo = Date.now();
+    r.dormindo = false; document.body.classList.remove("dormindo"); ultimo = performance.now();
     tela(true); relogio(); atualizar(); lerRede();
   }
   const veu = $("#repouso");
@@ -550,7 +551,7 @@ const Repouso = (() => {
   veu.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); soltar(); });
   setInterval(() => {
     const min = Number(AJ.hibernar_min ?? 10);
-    if (min > 0 && !r.dormindo && Date.now() - ultimo > min * 60000) dormir();
+    if (min > 0 && !r.dormindo && performance.now() - ultimo > min * 60000) dormir();
   }, 15000);
   tela(true); // Chromium reiniciou com a tela apagada: acende de novo
   return r;

@@ -113,6 +113,12 @@ visudo -cqf /tmp/luzes-reiniciar && install -m 440 /tmp/luzes-reiniciar /etc/sud
 
 # hibernacao da tela: wlopm apaga o monitor (vale tambem no --atualizar, para paineis ja instalados receberem)
 command -v wlopm >/dev/null || apt-get install -y -qq wlopm || aviso "wlopm não instalado: na hibernação a tela fica preta, mas o monitor não desliga."
+# vigia da tela: um toque sempre acende, mesmo se o Chromium parar de responder (log em $PASTA/tela.log)
+install -m 755 "$ORIGEM/sistema/tela-vigia.py" "$PASTA/tela-vigia.py"
+sed -e "s|__USUARIO__|$USUARIO|g" -e "s|__PASTA__|$PASTA|g" "$ORIGEM/sistema/tela-vigia.service" >/etc/systemd/system/tela-vigia.service
+systemctl daemon-reload
+systemctl enable -q tela-vigia
+systemctl restart tela-vigia
 
 # atualizacao automatica pelo GitHub (vale tambem no --atualizar, para paineis ja instalados receberem)
 passo "Atualização automática pelo GitHub (toda noite à 1h, com internet e sem uso)"

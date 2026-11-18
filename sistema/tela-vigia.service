@@ -1,0 +1,13 @@
+[Unit]
+Description=Vigia da tela do painel (toque sempre acende a tela)
+After=luzes.service
+
+[Service]
+User=__USUARIO__
+SupplementaryGroups=input
+ExecStart=/usr/bin/python3 __PASTA__/tela-vigia.py __PASTA__
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
